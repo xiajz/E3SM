@@ -371,6 +371,9 @@
     <environment_variables compiler="intel19">
       <env name="MPICH_MEMORY_REPORT">1</env>
     </environment_variables>
+    <environment_variables compiler="intel" mpilib="!mpi-serial">
+      <env name="ADIOS2_DIR">/project/projectdirs/acme/3rdparty/adios/2.5.0/icc-18.0.1</env>
+    </environment_variables>
   </machine>
 
   <!-- Skylake nodes of Stampede2 at TACC -->
@@ -738,6 +741,9 @@
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">64M</env>
+    </environment_variables>
+    <environment_variables compiler="gnu" mpilib="!mpi-serial">
+      <env name="ADIOS2_DIR">/homes/wuda/3rdparty/adios-2.5.0</env>
     </environment_variables>
   </machine>
 
@@ -3088,6 +3094,15 @@
     </environment_variables>
     <environment_variables compiler="pgi" mpilib="!mpi-serial">
       <env name="PNETCDF_PATH">/gpfs/alpine/cli115/proj-shared/3rdparty/pnetcdf/1.11.2/pgi-19.4</env>
+    </environment_variables>
+    <environment_variables compiler="gnu" mpilib="!mpi-serial">
+      <env name="ADIOS2_DIR">/gpfs/alpine/cli115/proj-shared/3rdparty/adios/2.5.0/gcc-6.4.0</env>
+    </environment_variables>
+    <environment_variables compiler="ibm" mpilib="!mpi-serial">
+      <env name="ADIOS2_DIR">/gpfs/alpine/cli115/proj-shared/3rdparty/adios/2.5.0/xl-16.1.1</env>
+    </environment_variables>
+    <environment_variables compiler="pgi" mpilib="!mpi-serial">
+      <env name="ADIOS2_DIR">/gpfs/alpine/cli115/proj-shared/3rdparty/adios/2.5.0/pgi-19.4</env>
     </environment_variables>
   </machine>
 
