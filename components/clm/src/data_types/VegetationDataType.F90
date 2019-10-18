@@ -24,7 +24,7 @@ module VegetationDataType
   use histFileMod     , only : hist_addfld1d, hist_addfld2d, no_snow_normal
   use ncdio_pio       , only : file_desc_t, ncd_io, ncd_double, ncd_int, ncd_inqvdlen
   use decompMod       , only : bounds_type, get_proc_global
-  use subgridAveMod   , only : p2c
+  use subgridAveMod   , only : p2c,p2c_1d_filter
   use restUtilMod
   use CNStateType     , only: cnstate_type
   use SpeciesMod              , only : species_from_string
@@ -1024,8 +1024,9 @@ module VegetationDataType
   type(vegetation_nitrogen_flux)         , public, target :: veg_nf     ! vegetation nitrogen flux
   type(vegetation_phosphorus_flux)       , public, target :: veg_pf     ! vegetation phosphorus flux
 
+  !$acc declare create(veg_cf, veg_es, veg_ef, veg_ws, veg_wf)
   !------------------------------------------------------------------------
-  
+
   contains
 
   !------------------------------------------------------------------------

@@ -357,7 +357,7 @@ contains
 
          ! Determine friction velocity, and potential temperature and humidity
          ! profiles of the surface boundary layer
-
+         print *, "calculating FrictionVelocity in LakeFluxes"
          call FrictionVelocity(begp, endp, fncopy, fpcopy, &
               displa(begp:endp), z0mg(begp:endp), z0hg(begp:endp), z0qg(begp:endp), &
               obu(begp:endp), iter, ur(begp:endp), um(begp:endp), ustar(begp:endp), &

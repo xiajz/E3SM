@@ -92,6 +92,8 @@ module TopounitDataType
   type(topounit_atmospheric_flux),     public, target :: top_af
   type(topounit_energy_state),         public, target :: top_es
 
+  !$acc declare create(top_as, top_af, top_es)
+
   contains
 
   !-----------------------------------------------------------------------

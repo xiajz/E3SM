@@ -387,6 +387,7 @@ contains
          ! temperature and humidity profiles of surface boundary layer.
 
          if (num_urbanl > 0) then
+           print *, "calculating FrictionVelocity in UrbanFluxes"
             call FrictionVelocity(begl, endl, &
                  num_urbanl, filter_urbanl, &
                  z_d_town(begl:endl), z_0_town(begl:endl), z_0_town(begl:endl), z_0_town(begl:endl), &

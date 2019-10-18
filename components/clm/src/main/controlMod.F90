@@ -307,7 +307,7 @@ contains
 #if (defined _OPENMP)
     clump_pproc = omp_get_max_threads()
 #else
-    clump_pproc = 1
+    clump_pproc = 2
 #endif
 
     override_nsrest = nsrest

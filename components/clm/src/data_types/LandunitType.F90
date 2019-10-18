@@ -61,13 +61,14 @@ module LandunitType
 
      procedure, public :: Init => lun_pp_init
      procedure, public :: Clean => lun_pp_clean
-     
+
   end type landunit_physical_properties
   type(landunit_physical_properties), public, target :: lun_pp  !geomorphological landunits
+  !$acc declare create(lun_pp)
   !------------------------------------------------------------------------
 
 contains
-  
+
   !------------------------------------------------------------------------
   subroutine lun_pp_Init(this, begl, endl)
     !

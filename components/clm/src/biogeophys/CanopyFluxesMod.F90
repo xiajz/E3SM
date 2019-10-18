@@ -744,18 +744,27 @@ contains
 
       ! Begin stability iteration
 
+    !!  !$acc enter data create(ustar,temp1,temp2,temp12m,temp22m,fm)
+    !!  !$acc update device(frictionvel_vars,ustar,temp1,temp2,temp12m,temp22m,fm)
+
       call t_startf('can_iter')
+      print *, "itlef:",itlef, "fn:",fn
+
       ITERATION : do while (itlef <= itmax .and. fn > 0)
 
          ! Determine friction velocity, and potential temperature and humidity
          ! profiles of the surface boundary layer
 
-         call FrictionVelocity (begp, endp, fn, filterp, &
-              displa(begp:endp), z0mv(begp:endp), z0hv(begp:endp), z0qv(begp:endp), &
-              obu(begp:endp), itlef+1, ur(begp:endp), um(begp:endp), ustar(begp:endp), &
-              temp1(begp:endp), temp2(begp:endp), temp12m(begp:endp), temp22m(begp:endp), fm(begp:endp), &
+    !!    !$acc update device(frictionvel_vars,ustar,temp1,temp2,temp12m,temp22m,fm)
+        print *, "calculating FrictionVelocity in CanopyFluxes"
+         call FrictionVelocity(bounds%begp, bounds%endp, fn, filterp, &
+              canopystate_vars%displa_patch,&
+              frictionvel_vars%z0mv_patch, frictionvel_vars%z0hv_patch, &
+              frictionvel_vars%z0qv_patch, obu , itlef+1, ur , um , ustar , &
+              temp1 , temp2 , temp12m , temp22m , fm , &
               frictionvel_vars)
 
+    !!    !$acc update self(frictionvel_vars,ustar,temp1,temp2,temp12m,temp22m,fm)
          do f = 1, fn
             p = filterp(f)
             c = veg_pp%column(p)

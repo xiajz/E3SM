@@ -83,6 +83,7 @@ module ColumnType
   ! declare the public instance of column-level meta-data type
   !-----------------------------------------------------------------------
   type(column_physical_properties)   , public, target :: col_pp    ! column physical properties
+  !$acc declare create(col_pp)
 
   !------------------------------------------------------------------------
 

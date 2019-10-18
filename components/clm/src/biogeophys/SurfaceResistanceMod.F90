@@ -31,7 +31,7 @@ module SurfaceResistanceMod
   ! !REVISION HISTORY:
   ! 6/25/2013 Created by Jinyun Tang
   !-----------------------------------------------------------------------
-  
+!$acc declare create(soil_stress_method)
 contains
 
   !-----------------------------------------------------------------------
@@ -198,7 +198,7 @@ contains
    
    !------------------------------------------------------------------------------   
    function do_soilevap_beta()result(lres)
-     !
+     !$acc routine seq
      !DESCRIPTION
      ! return true if the moisture stress for soil evaporation is computed as beta factor
      ! otherwise false

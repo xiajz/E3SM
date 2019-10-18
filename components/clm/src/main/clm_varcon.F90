@@ -222,6 +222,10 @@ module clm_varcon
   real(r8), public, parameter :: snw_rds_min = 54.526_r8    
   !-----------------------------------------------------------------------
 
+  !$acc declare create(grav)
+  !$acc declare create(vkc)
+  !$acc declare create(cpair, denice, denh2o)
+  
 contains
 
   !------------------------------------------------------------------------------

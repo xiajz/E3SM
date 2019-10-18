@@ -3220,6 +3220,10 @@ contains
 
              ! calculate the associated carbon allocation, and the excess
              ! carbon flux that must be accounted for through downregulation
+            ! print *,"CP-only:", cnallocate_carbonphosphorus_only()
+            ! print *,"CN-only:", cnallocate_carbonnitrogen_only()
+            ! print *, "C-only:", cnallocate_carbon_only()
+
 
              if( .not.cnallocate_carbonphosphorus_only().and. .not.cnallocate_carbonnitrogen_only()&
                   .and. .not.cnallocate_carbon_only() )then
@@ -3596,6 +3600,12 @@ contains
             ! updated allocation if necessary
             nlc = min(nlc_adjust_high ,plant_calloc(p) / c_allometry(p) )
          end if
+
+        if (nlc .ne. 0_r8 ) then
+
+                print *, "in Allocation 3: nlc, fcur, f1, f2, f3, f4 ="
+                print *, nlc, fcur, f1, f2, f3, f4
+        end if 
 
          cpool_to_leafc(p)          = nlc * fcur
          cpool_to_leafc_storage(p)  = nlc * (1._r8 - fcur)

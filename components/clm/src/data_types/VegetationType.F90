@@ -82,7 +82,7 @@ module VegetationType
   ! declare the public instance of vegetation physical property data types
   !-----------------------------------------------------------------------
   type(vegetation_physical_properties)   , public, target :: veg_pp    ! vegetation physical properties
-
+  !$acc declare create(veg_pp)
   !------------------------------------------------------------------------
 
 contains

@@ -19,6 +19,7 @@ module clm_driver
   use clm_varpar             , only : nlevsno, nlevgrnd, crop_prog
   use spmdMod                , only : masterproc, mpicom
   use decompMod              , only : get_proc_clumps, get_clump_bounds, get_proc_bounds, bounds_type
+  use decompMod              , only : get_clump_bounds_gpu
   use filterMod              , only : filter, filter_inactive_and_active
   use histFileMod            , only : hist_update_hbuf, hist_htapes_wrapup
   use restFileMod            , only : restFile_write, restFile_filename
@@ -143,6 +144,8 @@ module clm_driver
   use VegetationDataType     , only : veg_cs, c13_veg_cs, c14_veg_cs 
   use VegetationDataType     , only : veg_ns, veg_nf  
   use VegetationDataType     , only : veg_ps, veg_pf  
+  use VegetationDataType     , only : veg_cf, veg_ef
+  use VegetationPropertiesType , only : veg_vp
 
   !----------------------------------------------------------------------------
   ! bgc interface & pflotran:
@@ -164,13 +167,15 @@ module clm_driver
   use WaterBudgetMod              , only : WaterBudget_SetEndingMonthlyStates
   use clm_varctl                  , only : do_budgets, budget_inst, budget_daily, budget_month
   use clm_varctl                  , only : budget_ann, budget_ltann, budget_ltend
-
+  use decompMod                   , only : clumps, procinfo
+  !use openacc
   !
   ! !PUBLIC TYPES:
   implicit none
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: clm_drv            ! Main clm driver 
+  public :: print_derived_type_canopystate
   !
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: clm_drv_patch2col
@@ -221,6 +226,8 @@ contains
     character(len=256)   :: dateTimeString
     type(bounds_type)    :: bounds_clump    
     type(bounds_type)    :: bounds_proc     
+    integer   ::  mygpu, ngpus, cid
+    real*8   :: sto
     !-----------------------------------------------------------------------
 
     call get_curr_time_string(dateTimeString)
@@ -560,6 +567,72 @@ contains
     ! snow accumulation exceeds 10 mm.
     ! ============================================================================
 
+    !$acc enter data create(veg_pp, veg_cf, veg_vp, veg_es, veg_ws, veg_wf, &
+    !$acc top_as, lun_pp, col_pp, &
+    !$acc col_es, col_ef, col_ws, col_wf &
+    !$acc )
+
+    print *, "now updating all variables on device"
+
+    !$acc update device(veg_pp, veg_cf, veg_vp, &
+    !$acc grc_cs, grc_cf, grc_nf, grc_pf, top_as, lun_pp, col_pp, &
+    !$acc col_es, col_ef, col_ws, col_wf, &
+    !$acc veg_es, veg_ws, veg_wf)
+
+    !$acc enter data create(filter, clumps, bounds_clump, procinfo,&
+    !$acc photosyns_vars, canopystate_vars,veg_ef)
+    
+    !$acc update device(filter, clumps, bounds_clump, procinfo, &
+    !$acc canopystate_vars,photosyns_vars, veg_ef)
+
+    print *, "size of gridcell: ", shape(veg_pp%gridcell)
+
+    !call get_clump_bounds(1, bounds_clump)
+    !print*,"++++++++++++++++++++++++++ FROM CPU ++++++++++++++++++++++++++++++++"
+
+    !   do p = bounds_clump%begp, bounds_clump%endp
+    !            print *, canopystate_vars%frac_veg_nosno_patch(p), canopystate_vars%frac_veg_nosno_alb_patch(p)
+
+    !    end do
+
+
+!================== testing clump loop for BareGroundFluxes====================!
+!
+!  !$acc serial present(filter,clumps,bounds_clump, procinfo,&
+!  !$acc  col_wf, col_ef, col_ws,col_pp, photosyns_vars,col_pp,veg_pp, veg_ef, &
+!  !$acc top_as,col_es, veg_es, canopystate_vars) copy(frictionvel_vars)
+!
+!  nc = 1
+!  call get_clump_bounds_gpu(nc, bounds_clump, clumps, procinfo)
+! ! do nc =1,nclumps
+!
+!     !  print *, "++++++++++++++++++++++++++++++ FROM GPU +++++++++++++++++++++++++++++++++"
+!     !  do p = bounds_clump%begp, bounds_clump%endp
+!     !           print *, canopystate_vars%frac_veg_nosno_patch(p), canopystate_vars%frac_veg_nosno_alb_patch(p)
+!     !  end do
+!
+!  call clm_drv_init(bounds_clump, &
+!      filter(nc)%num_nolakec, filter(nc)%nolakec, &
+!      filter(nc)%num_nolakep, filter(nc)%nolakep, &
+!      filter(nc)%num_soilp  , filter(nc)%soilp,   &
+!      canopystate_vars, photosyns_vars,&
+!      col_wf, col_ef)
+!
+!  print *, "output inside test loop"
+!  call BareGroundFluxes(bounds_clump,                                 &
+!       filter(nc)%num_nolakeurbanp, filter(nc)%nolakeurbanp,          &
+!       atm2lnd_vars, canopystate_vars, soilstate_vars,                &
+!       frictionvel_vars, ch4_vars, col_ef)
+!
+! !   end do
+!    !$acc end serial
+!!!!==============================================================================!
+!!    !$acc update self(bounds_clump)
+
+!!    !$acc exit data delete(filter, clumps, bounds_clump, procinfo,&
+!!    !$acc photosyns_vars, canopystate_vars,veg_ef)
+
+    print *, "done with clump loop test"
     !$OMP PARALLEL DO PRIVATE (nc,l,c, bounds_clump)
     do nc = 1,nclumps
        call get_clump_bounds(nc, bounds_clump)
@@ -573,7 +646,8 @@ contains
             filter(nc)%num_nolakec, filter(nc)%nolakec, &
             filter(nc)%num_nolakep, filter(nc)%nolakep, &
             filter(nc)%num_soilp  , filter(nc)%soilp,   &
-            canopystate_vars, waterstate_vars, waterflux_vars, energyflux_vars)
+            canopystate_vars, photosyns_vars, &
+            col_wf, col_ef)
 
        call downscale_forcings(bounds_clump, &
             filter(nc)%num_do_smb_c, filter(nc)%do_smb_c, &
@@ -662,12 +736,14 @@ contains
        
        ! Bareground fluxes for all patches except lakes and urban landunits
 
+
+       print *, "calling BareGroundFluxes in clm_run:"
        call BareGroundFluxes(bounds_clump,                                 &
             filter(nc)%num_nolakeurbanp, filter(nc)%nolakeurbanp,          &
             atm2lnd_vars, canopystate_vars, soilstate_vars,                &
-            frictionvel_vars, ch4_vars, energyflux_vars, temperature_vars, &
-            waterflux_vars, waterstate_vars)
-       call t_stopf('bgflux')
+            frictionvel_vars, ch4_vars, col_ef)
+
+    call t_stopf('bgflux')
 
        ! non-bareground fluxes for all patches except lakes and urban landunits
        ! Calculate canopy temperature, latent and sensible fluxes from the canopy,
@@ -1313,6 +1389,12 @@ contains
     end do
     !$OMP END PARALLEL DO
 
+
+    !$acc shutdown device_type(acc_device_nvidia)
+
+    call mpi_barrier(mpicom,ier)
+
+    call endrun("done with clump loop")
     ! ============================================================================
     ! Determine gridcell averaged properties to send to atm
     ! ============================================================================
@@ -1465,8 +1547,10 @@ contains
        num_nolakec, filter_nolakec, &
        num_nolakep, filter_nolakep, &
        num_soilp  , filter_soilp, &
-       canopystate_vars, waterstate_vars, waterflux_vars, energyflux_vars)
+       canopystate_vars, photosyns_vars,&
+       col_wf, col_ef)
     !
+    !$acc routine seq
     ! !DESCRIPTION:
     ! Initialization of clm driver variables needed from previous timestep
     !
@@ -1477,9 +1561,8 @@ contains
     use clm_varcon         , only : h2osno_max
     use landunit_varcon    , only : istice_mec
     use CanopyStateType    , only : canopystate_type
-    use WaterStateType     , only : waterstate_type
-    use WaterFluxType      , only : waterflux_type
-    use EnergyFluxType     , only : energyflux_type
+    use ColumnDataType     , only : column_energy_flux, column_water_flux
+    use PhotosynthesisType , only : photosyns_type
     !
     ! !ARGUMENTS:
     type(bounds_type)     , intent(in)    :: bounds  
@@ -1490,91 +1573,67 @@ contains
     integer               , intent(in)    :: num_soilp         ! number of soil points in patch filter
     integer               , intent(in)    :: filter_soilp(:)   ! patch filter for soil points
     type(canopystate_type), intent(inout) :: canopystate_vars
-    type(waterstate_type) , intent(inout) :: waterstate_vars
-    type(waterflux_type)  , intent(inout) :: waterflux_vars
-    type(energyflux_type) , intent(inout) :: energyflux_vars
+    type(photosyns_type)  , intent(inout) :: photosyns_vars
+    type(column_water_flux),  target , intent(inout) :: col_wf
+    type(column_energy_flux), target, intent(inout) :: col_ef
     !
     ! !LOCAL VARIABLES:
     integer :: l, c, p, f, j         ! indices
     integer :: fp, fc                  ! filter indices
     !-----------------------------------------------------------------------
 
-    associate(                                                             & 
-         snl                => col_pp%snl                                   , & ! Input:  [integer  (:)   ]  number of snow layers                    
-        
-         h2osno             => col_ws%h2osno                , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                     
-         h2osoi_ice         => col_ws%h2osoi_ice            , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                      
-         h2osoi_liq         => col_ws%h2osoi_liq            , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)                  
-         do_capsnow         => col_ws%do_capsnow            , & ! Output: [logical  (:)   ]  true => do snow capping                  
-         h2osno_old         => col_ws%h2osno_old            , & ! Output: [real(r8) (:)   ]  snow water (mm H2O) at previous time step
-         frac_iceold        => col_ws%frac_iceold           , & ! Output: [real(r8) (:,:) ]  fraction of ice relative to the tot water
-
-         elai               => canopystate_vars%elai_patch               , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index with burying by snow    
-         esai               => canopystate_vars%esai_patch               , & ! Input:  [real(r8) (:)   ]  one-sided stem area index with burying by snow    
-         frac_veg_nosno     => canopystate_vars%frac_veg_nosno_patch     , & ! Output: [integer  (:)   ]  fraction of vegetation not covered by snow (0 OR 1) [-]
-         frac_veg_nosno_alb => canopystate_vars%frac_veg_nosno_alb_patch , & ! Output: [integer  (:)   ]  fraction of vegetation not covered by snow (0 OR 1) [-]
-
-         qflx_glcice        => col_wf%qflx_glcice            , & ! Output: [real(r8) (:)   ]  flux of new glacier ice (mm H2O/s) [+ = ice grows]
-
-         eflx_bot           => col_ef%eflx_bot              , & ! Output: [real(r8) (:)   ]  heat flux from beneath soil/ice column (W/m**2)
-
-         cisun_z            => photosyns_vars%cisun_z_patch              , & ! Output: [real(r8) (:)   ]  intracellular sunlit leaf CO2 (Pa)
-         cisha_z            => photosyns_vars%cisha_z_patch                & ! Output: [real(r8) (:)   ]  intracellular shaded leaf CO2 (Pa)
-         )
-
       ! Initialize intracellular CO2 (Pa) parameters each timestep for use in VOCEmission
+     print *, "inside clm_drv_init"
       do p = bounds%begp,bounds%endp
-         cisun_z(p,:) = -999._r8
-         cisha_z(p,:) = -999._r8
+         photosyns_vars%cisun_z_patch(p,:) = -999._r8
+         photosyns_vars%cisha_z_patch(p,:) = -999._r8
       end do
 
       do c = bounds%begc,bounds%endc
          l = col_pp%landunit(c)
 
          ! Save snow mass at previous time step
-         h2osno_old(c) = h2osno(c)
+         col_ws%h2osno_old(c) = col_ws%h2osno(c)
 
          ! Decide whether to cap snow
-         if (h2osno(c) > h2osno_max) then
-            do_capsnow(c) = .true.
+         if (col_ws%h2osno(c) > h2osno_max) then
+            col_ws%do_capsnow(c) = .true.
          else
-            do_capsnow(c) = .false.
+            col_ws%do_capsnow(c) = .false.
          end if
 
-         ! Reset flux from beneath soil/ice column 
-         eflx_bot(c)  = 0._r8
+         ! Reset flux from beneath soil/ice column
+         col_ef%eflx_bot(c)  = 0._r8
 
-         ! Initialize qflx_glcice everywhere, to zero.
-         qflx_glcice(c) = 0._r8     
+         ! Initialize col_wf%qflx_glcice everywhere, to zero.
+         col_wf%qflx_glcice(c) = 0._r8
 
       end do
 
-      ! Initialize fraction of vegetation not covered by snow 
-
-      do p = bounds%begp,bounds%endp
+     ! ! Initialize fraction of vegetation not covered by snow
+        print *, "adjusting canopystate vars"
+      do p = bounds%begp, bounds%endp
          if (veg_pp%active(p)) then
-            frac_veg_nosno(p) = frac_veg_nosno_alb(p)
+           canopystate_vars%frac_veg_nosno_patch(p) = canopystate_vars%frac_veg_nosno_alb_patch(p)
          else
-            frac_veg_nosno(p) = 0._r8
+           canopystate_vars%frac_veg_nosno_patch(p) = 0
          end if
       end do
 
-      ! Initialize set of previous time-step variables
-      ! Ice fraction of snow at previous time step
-      
+     ! ! Initialize set of previous time-step variables
+     ! ! Ice fraction of snow at previous time step
+       print *, "adjusting col_ws"
       do j = -nlevsno+1,0
          do f = 1, num_nolakec
             c = filter_nolakec(f)
-            if (j >= snl(c) + 1) then
-               frac_iceold(c,j) = h2osoi_ice(c,j)/(h2osoi_liq(c,j)+h2osoi_ice(c,j))
+            if (j >= col_pp%snl(c) + 1) then
+               col_ws%frac_iceold(c,j) = col_ws%h2osoi_ice(c,j)/(col_ws%h2osoi_liq(c,j)+col_ws%h2osoi_ice(c,j))
             end if
          end do
       end do
 
-    end associate
-
   end subroutine clm_drv_init
-  
+
   !-----------------------------------------------------------------------
   subroutine clm_drv_patch2col (bounds, num_nolakec, filter_nolakec, &
        waterstate_vars, energyflux_vars, waterflux_vars)
@@ -1790,5 +1849,68 @@ contains
 1000 format (1x,'nstep = ',i10,'   TS = ',f21.15)
 
   end subroutine write_diagnostic
+
+  subroutine print_derived_type_canopystate(canopystate_vars, bounds )
+
+        use CanopyStateType, only : CanopyState_type
+        use decompMod,       only : bounds_type
+
+        implicit none
+
+        type(CanopyState_type), intent(in) ::  canopystate_vars
+        type(bounds_type),   intent(in) :: bounds
+
+        integer p, c
+
+        !$acc enter data create(canopystate_vars)
+        !$acc update device(canopystate_vars)
+
+        !$acc serial copy(bounds) present(canopystate_vars)
+        do p= bounds%begp, bounds%endp
+
+          !print *,"frac_veg_nosno_patch    ", canopystate_vars%frac_veg_nosno_patch     (p)
+          print *,"frac_veg_nosno_alb_patch", canopystate_vars%frac_veg_nosno_alb_patch (p)
+          print *,"tlai_patch              ", canopystate_vars%tlai_patch               (p)
+          print *,"tsai_patch              ", canopystate_vars%tsai_patch               (p)
+          print *,"elai_patch              ", canopystate_vars%elai_patch               (p)
+          print *,"elai_p_patch            ", canopystate_vars%elai_p_patch             (p)
+          print *,"esai_patch              ", canopystate_vars%esai_patch               (p)
+          print *,"laisun_patch            ", canopystate_vars%laisun_patch             (p)
+          print *,"laisha_patch            ", canopystate_vars%laisha_patch             (p)
+          print *,"laisun_z_patch          ", canopystate_vars%laisun_z_patch           (p,1)
+          print *,"laisha_z_patch          ", canopystate_vars%laisha_z_patch           (p,1)
+          print *,"mlaidiff_patch          ", canopystate_vars%mlaidiff_patch           (p)
+          print *,"annlai_patch          (1", canopystate_vars%annlai_patch          (12,p)
+          print *,"htop_patch              ", canopystate_vars%htop_patch               (p)
+          print *,"hbot_patch              ", canopystate_vars%hbot_patch               (p)
+          print *,"displa_patch            ", canopystate_vars%displa_patch             (p)
+          print *,"fsun_patch              ", canopystate_vars%fsun_patch               (p)
+          print *,"fsun24_patch            ", canopystate_vars%fsun24_patch             (p)
+          print *,"fsun240_patch           ", canopystate_vars%fsun240_patch            (p)
+
+        end do
+
+        do c = bounds%begc, bounds%endc
+          print *, "alt_col                 ",canopystate_vars%alt_col                  (c)
+          print *, "altmax_col              ",canopystate_vars%altmax_col               (c)
+          print *, "altmax_lastyear_col     ",canopystate_vars%altmax_lastyear_col      (c)
+          print *, "alt_indx_col            ",canopystate_vars%alt_indx_col             (c)
+          print *, "altmax_indx_col         ",canopystate_vars%altmax_indx_col          (c)
+          print *, "altmax_lastyear_indx_col",canopystate_vars%altmax_lastyear_indx_col (c)
+        end do
+
+        do p=bounds%begp, bounds%endp
+          print *, "dewmx_patch      ", canopystate_vars%dewmx_patch              (p)
+          print *, "dleaf_patch      ", canopystate_vars%dleaf_patch              (p)
+          print *, "lbl_rsc_h2o_patch", canopystate_vars%lbl_rsc_h2o_patch        (p)
+        end do
+
+        !$acc end serial
+        !$acc exit data delete(canopystate_vars)
+
+  end subroutine print_derived_type_canopystate
+
+
+
 
 end module clm_driver

@@ -495,6 +495,8 @@ contains
     do cid = 1,nclumps
        proc_nXXX(clumps(cid)%owner) = &
         proc_nXXX(clumps(cid)%owner) + clumps(cid)%ntopounits
+        print *,"cid, ntopounits", cid, proc_nXXX(clumps(cid)%owner)
+
     enddo
 
     ! determine offset (begt) for all processes,
@@ -573,6 +575,7 @@ contains
     do cid = 1,nclumps
        proc_nXXX(clumps(cid)%owner) = &
         proc_nXXX(clumps(cid)%owner) + clumps(cid)%npfts
+        print *, "cid, num pfts", cid, proc_nXXX(clumps(cid)%owner)
     enddo
 
     ! determine offset (begp) for all processes,

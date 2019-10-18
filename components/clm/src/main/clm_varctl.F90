@@ -308,7 +308,7 @@ module clm_varctl
   logical, public :: use_mexicocity      = .false.
   logical, public :: use_noio            = .false.
   logical, public :: use_var_soil_thick  = .false.
-
+  !$acc declare create(use_lch4)
   !----------------------------------------------------------
   ! VSFM switches
   !----------------------------------------------------------

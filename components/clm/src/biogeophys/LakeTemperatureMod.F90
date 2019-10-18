@@ -269,7 +269,7 @@ contains
     ! Determine step size
 
     dtime = get_step_size()
-
+    print *, "initialization"
     ! Initialize constants
     cwat = cpliq*denh2o ! water heat capacity per unit volume
     cice_eff = cpice*denh2o !use water density because layer depth is not adjusted
@@ -281,7 +281,7 @@ contains
     ! Needed for Lahey compiler which doesn't seem to allow shortcircuit logic for undefined variables.
     puddle(bounds%begc:bounds%endc) = .false.
     frzn(bounds%begc:bounds%endc) = .false.
-
+    print *, "beginning calculations"
     ! Begin calculations
 
     do fc = 1, num_lakec
@@ -309,7 +309,7 @@ contains
     ! which is currently not called over lakes. This has to be done
     ! here because phase change will occur in this routine.
     ! Ice fraction of snow at previous time step
-
+    print *,"ice fractions"
     do j = -nlevsno+1,0
       do fc = 1, num_lakec
          c = filter_lakec(fc)
@@ -320,13 +320,13 @@ contains
     end do
 
     ! Prepare for lake layer temperature calculations below
-
+    print *,"prepare lake layer"
     do fp = 1, num_lakep
        p = filter_lakep(fp)
        c = veg_pp%column(p)
 
        ! fin(c) = betaprime * sabg(p) + forc_lwrad(c) - (eflx_lwrad_out(p) + &
-       !     eflx_sh_tot(p) + eflx_lh_tot(p)) 
+       !     eflx_sh_tot(p) + eflx_lh_tot(p))
        ! fin(c) now passed from LakeFluxes as eflx_gnet
        fin(c) = eflx_gnet(p)
 
@@ -340,7 +340,7 @@ contains
     end do
 
     ! 2!) Lake density
-
+    print *,"Lake density"
     do j = 1, nlevlak
        do fc = 1, num_lakec
           c = filter_lakec(fc)
@@ -357,6 +357,8 @@ contains
     end do
 
     ! 3!) Diffusivity and implied thermal "conductivity" = diffusivity * cwat
+
+    print *,"Diffusivity"
     do j = 1, nlevlak-1
        do fc = 1, num_lakec
           c = filter_lakec(fc)
@@ -405,7 +407,7 @@ contains
           end if
        end do
     end do
-
+    print *,"after Diffusivity"
     do fc = 1, num_lakec
        c = filter_lakec(fc)
 
@@ -430,7 +432,7 @@ contains
        ! set number of column levels for use by Tridiagonal below
        jtop(c) = snl(c) + 1
     end do
-
+    print *, "heat source"
     ! 4!) Heat source term
     do j = 1, nlevlak
        do fp = 1, num_lakep
@@ -479,7 +481,7 @@ contains
     end do
 
     ! 5!) Set thermal properties and check initial energy content.
-
+    print *, "therm for lake"
     ! For lake
     do j = 1, nlevlak
        do fc = 1, num_lakec
@@ -490,6 +492,7 @@ contains
     end do
 
     ! For snow / soil
+    print *,"soilthermlake"
     call SoilThermProp_Lake(bounds, num_lakec, filter_lakec, &
          tk(bounds%begc:bounds%endc, :), &
          cv(bounds%begc:bounds%endc, :), &
@@ -499,7 +502,7 @@ contains
     ! Sum cv*t_lake for energy check
     ! Include latent heat term, and use tfrz as reference temperature
     ! to prevent abrupt change in heat content due to changing heat capacity with phase change.
-
+    print *,"energy check"
     ! This will need to be over all soil / lake / snow layers. Lake is below.
     do j = 1, nlevlak
        do fc = 1, num_lakec
@@ -512,6 +515,7 @@ contains
     end do
 
     ! Now do for soil / snow layers
+    print *, "now for soil/snow"
     do j = -nlevsno + 1, nlevgrnd
        do fc = 1, num_lakec
           c = filter_lakec(fc)
@@ -534,6 +538,7 @@ contains
     ! but its capacity to absorb latent heat may be used during phase change.
 
     ! Transfer sabg and sabg_lyr to column level
+    print*,"6"
     do j = -nlevsno+1,1
        do fp = 1, num_lakep
           p = filter_lakep(fp)
@@ -546,6 +551,7 @@ contains
        end do
     end do
 
+    print *,"interface depths"
     ! Set up interface depths, zx, heat capacities, cvx, solar source terms, phix, and temperatures, tx.
     do j = -nlevsno+1, nlevlak+nlevgrnd
        do fc = 1,num_lakec
@@ -585,7 +591,7 @@ contains
     end do
 
     ! Determine interface thermal conductivities, tkix
-
+    print *,"thermal conductiviities"
     do j = -nlevsno+1, nlevlak+nlevgrnd
        do fc = 1,num_lakec
           c = filter_lakec(fc)
@@ -667,7 +673,7 @@ contains
 
 
     ! 7!) Solve for tdsolution
-
+    print *, "7"
     call Tridiagonal(bounds, -nlevsno + 1, nlevlak + nlevgrnd, &
          jtop(bounds%begc:bounds%endc), &
          num_lakec, filter_lakec, &
@@ -714,7 +720,7 @@ contains
          energyflux_vars, lakestate_vars)
 
     !!!!!!!!!!!!!!!!!!!!!!!
-
+    print *,"9.5"
     ! 9.5!) Second energy check and water check.  Now check energy balance before and after phase
     !       change, considering the possibility of changed heat capacity during phase change, by
     !       using initial heat capacity in the first step, final heat capacity in the second step,
@@ -971,7 +977,7 @@ contains
           end do
        end do
     end if
-
+    print *,"11"
     !!!!!!!!!!!!!!!!!!!!!!!
     ! 11!) Re-evaluate thermal properties and sum energy content.
     ! For lake

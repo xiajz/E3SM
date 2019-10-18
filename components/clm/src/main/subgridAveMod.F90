@@ -17,7 +17,7 @@ module subgridAveMod
   use decompMod     , only : bounds_type
   use TopounitType  , only : top_pp
   use LandunitType  , only : lun_pp                
-  use ColumnType    , only : col_pp                
+  use ColumnType    , only : col_pp,column_physical_properties                
   use VegetationType     , only : veg_pp                
   !
   ! !PUBLIC TYPES:
@@ -216,13 +216,15 @@ contains
     ! !DESCRIPTION:
     ! perform pft to column averaging for single level pft arrays
     !
+    !$acc routine seq
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds  
     integer , intent(in)  :: numfc
     integer , intent(in)  :: filterc(numfc)
     real(r8), intent(in)  :: pftarr( bounds%begp: )
     real(r8), intent(out) :: colarr( bounds%begc: )
-    !
+    !type(column_physical_properties) , target :: col_pp 
+
     ! !LOCAL VARIABLES:
     integer :: fc,c,p  ! indices
     !-----------------------------------------------------------------------

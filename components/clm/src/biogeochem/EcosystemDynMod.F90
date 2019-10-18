@@ -517,7 +517,12 @@ contains
 !    use MaintenanceRespMod             , only: MaintenanceResp
 !    use SoilLittDecompMod            , only: SoilLittDecompAlloc
     use PhenologyMod         , only: Phenology, CNLitterToColumn
-    use GrowthRespMod             , only: GrowthResp
+
+    use cudafor
+    use spmdMod
+    use abortutils       , only : endrun
+    use GrowthRespMod    , only: GrowthResp, GrowthResp_test, print_cf
+    !use GrowthRespMod    , only: acc_initialization
     use CarbonStateUpdate1Mod     , only: CarbonStateUpdate1,CarbonStateUpdate0
     use NitrogenStateUpdate1Mod     , only: NitrogenStateUpdate1
     use PhosphorusStateUpdate1Mod       , only: PhosphorusStateUpdate1
@@ -542,6 +547,13 @@ contains
 !    use AllocationMod        , only: cnallocation
     use SoilLittDecompMod            , only: SoilLittDecompAlloc
     use SoilLittDecompMod            , only: SoilLittDecompAlloc2 !after SoilLittDecompAlloc
+ !   use omp_lib
+
+    use pftvarcon        , only : grperc, grpnow, npcropmin
+    use VegetationPropertiesType   , only : veg_vp
+    use CNCarbonFluxType , only : carbonflux_type
+    use VegetationType        , only : veg_pp
+    use VegetationDataType    , only : veg_cf
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
@@ -576,7 +588,13 @@ contains
     type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
     type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
 
+    integer :: tid  !OMP thread ID
+    integer :: ier, ngpus, mygpu
+
+    !call cudaProfilerStart()
     !-----------------------------------------------------------------------
+    print *, "creating data"
+    !$acc enter data create(veg_cf,veg_vp)
 
     ! Call the main CN routines
     ! only do if ed is off
@@ -633,9 +651,17 @@ contains
        !--------------------------------------------
 
        call t_startf('GrowthResp')
-       call GrowthResp(num_soilp, filter_soilp, &
-            carbonflux_vars)
+
+       call GrowthResp_test(num_soilp, filter_soilp, veg_cf, veg_pp,veg_vp,&
+                grperc,grpnow,npcropmin)
+
+       !call GrowthResp(num_soilp, filter_soilp, &
+       !     carbonflux_vars)
+
+
        call t_stopf('GrowthResp')
+       !call print_cf(num_soilp, filter_soilp, veg_cf, veg_vp, veg_pp, npcropmin, grpnow, grperc)
+
 
        call veg_cf%SummaryRR(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, col_cf)
        if(use_c13) then
@@ -645,6 +671,9 @@ contains
          call c14_veg_cf%SummaryRR(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, c14_col_cf)
        endif
 
+
+       call cudaProfilerStop()
+       !call mpi_barrier(mpicom,ier)
        !--------------------------------------------
        ! Dynamic Roots
        !--------------------------------------------

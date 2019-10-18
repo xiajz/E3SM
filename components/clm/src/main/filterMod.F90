@@ -285,7 +285,7 @@ contains
     integer :: fnl,fnlu    ! non-lake filter index
     integer :: fs          ! soil filter index
     integer :: f, fn       ! general indices
-    integer :: g           !gridcell index
+    integer :: g           ! gridcell index
     !------------------------------------------------------------------------
 
     SHR_ASSERT(bounds%level == BOUNDS_LEVEL_CLUMP, errMsg(__FILE__, __LINE__))
@@ -295,7 +295,7 @@ contains
 
     ! Create lake and non-lake filters at column-level 
 
-    fl = 0
+    fl  = 0
     fnl = 0
     do c = bounds%begc,bounds%endc
        if (col_pp%active(c) .or. include_inactive) then
@@ -314,7 +314,7 @@ contains
 
     ! Create lake and non-lake filters at pft-level 
 
-    fl = 0
+    fl  = 0
     fnl = 0
     fnlu = 0
     do p = bounds%begp,bounds%endp

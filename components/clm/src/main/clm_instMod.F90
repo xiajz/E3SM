@@ -79,7 +79,6 @@ module clm_instMod
 
   !
   implicit none
-  save
 
  public   ! By default everything is public
   !
@@ -102,7 +101,7 @@ module clm_instMod
   type(vocemis_type)                                  :: vocemis_vars
   type(drydepvel_type)                                :: drydepvel_vars
   type(aerosol_type)                                  :: aerosol_vars
-  type(canopystate_type)                              :: canopystate_vars
+  type(canopystate_type), target                      :: canopystate_vars
   type(energyflux_type)                               :: energyflux_vars
   type(frictionvel_type)                              :: frictionvel_vars
   type(lakestate_type)                                :: lakestate_vars
@@ -132,6 +131,7 @@ module clm_instMod
   public :: clm_inst_biogeophys
   public :: alm_fates
 
+!$acc declare create(photosyns_vars)
 contains
 
 
@@ -431,6 +431,47 @@ contains
 
     end subroutine clm_inst_biogeophys
 
+    subroutine print_frictionvel_vars(frictionvel_vars, bounds)
+
+      use FrictionVelocityType       , only : frictionvel_type
+      use decompMod,       only : bounds_type
+      !use clm_instMod                , only : frictionvel_vars
+
+      implicit none
+
+      type(frictionvel_type), intent(in)  :: frictionvel_vars
+      type(bounds_type),   intent(in) :: bounds
+      integer :: p, c
+      !$acc enter data create(frictionvel_vars)
+      !$acc update device(frictionvel_vars)
+
+      !$acc serial
+      do p = bounds%begp, bounds%endp
+        print *, "forc_hgt_u_patch",frictionvel_vars%forc_hgt_u_patch (p)
+        print *, "forc_hgt_t_patch",frictionvel_vars%forc_hgt_t_patch (p)
+        print *, "forc_hgt_q_patch",frictionvel_vars%forc_hgt_q_patch (p)
+        print *, "u10_patch       ",frictionvel_vars%u10_patch        (p)
+        print *, "u10_clm_patch   ",frictionvel_vars%u10_clm_patch    (p)
+        print *, "va_patch        ",frictionvel_vars%va_patch         (p)
+        print *, "vds_patch       ",frictionvel_vars%vds_patch        (p)
+        print *, "fv_patch        ",frictionvel_vars%fv_patch         (p)
+        print *, "rb1_patch       ",frictionvel_vars%rb1_patch        (p)
+        print *, "ram1_patch      ",frictionvel_vars%ram1_patch       (p)
+        print *, "z0m_patch       ",frictionvel_vars%z0m_patch        (p)
+        print *, "z0mv_patch      ",frictionvel_vars%z0mv_patch       (p)
+        print *, "z0hv_patch      ",frictionvel_vars%z0hv_patch       (p)
+        print *, "z0qv_patch      ",frictionvel_vars%z0qv_patch       (p)
+      end do
+      do c = bounds%begc, bounds%endc
+        print *,"z0mg_col", frictionvel_vars%z0mg_col         (c)
+        print *,"z0qg_col", frictionvel_vars%z0qg_col         (c)
+        print *,"z0hg_col", frictionvel_vars%z0hg_col         (c)
+      end do
+      !$acc end serial
+
+      !$acc exit data delete(frictionvel_vars)
+
+    end subroutine print_frictionvel_vars
+
 
 end module clm_instMod
-

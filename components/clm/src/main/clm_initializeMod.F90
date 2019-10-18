@@ -338,6 +338,12 @@ contains
     call t_stopf('init_filters')
 
     nclumps = get_proc_clumps()
+
+  !!  do nc = 1, nclumps
+  !!     call get_clump_bounds(nc, bounds_clump)
+  !!     call print_grid(bounds_clump)
+  !!  end do
+
     !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
     do nc = 1, nclumps
        call get_clump_bounds(nc, bounds_clump)
@@ -1092,5 +1098,36 @@ contains
 
   end subroutine clm_petsc_init
 
+ subroutine print_grid(bounds)
+
+   use VegetationType,  only : veg_pp
+   use ColumnType,      only : col_pp
+   use decompMod,       only : bounds_type
+
+
+   implicit none
+
+   type(bounds_type) :: bounds
+   integer :: p, c , l ,g, nc, i, npfts
+   integer :: coli,colf, pfti, pftf
+
+   nc = bounds%clump_index
+   print *, " "
+   print *, "++++++++++ Clump ",nc," +++++++++++"
+
+   do l = bounds%begl, bounds%endl
+     print *, "=============================="
+     print *,"g   " , lun_pp%gridcell(l)
+     print *,"c   " , lun_pp%ncolumns(l)
+     print *,"p   " , lun_pp%npfts(l)
+     print *,"i   " , lun_pp%itype(l)
+     print *,"coli" , lun_pp%coli(l)
+     print *,"colf" , lun_pp%colf(l)
+     print *,"pfti" , lun_pp%pfti(l)
+     print *,"pftf" , lun_pp%pftf(l)
+     print *, "=============================="
+   end do
+
+ end subroutine print_grid
 
 end module clm_initializeMod
