@@ -67,8 +67,8 @@ contains
       use ppgrid, only: pcols, pver
       use physics_types, only: physics_state
       use physics_buffer, only: physics_buffer_desc, pbuf_get_field, pbuf_get_index
-      use cloud_rad_props, only: get_ice_optics_sw, &
-                                 get_liquid_optics_sw
+      use cloud_rad_props, only: mitchell_ice_optics_sw, &
+                                 gammadist_liq_optics_sw
 
       ! Inputs. Right now, this uses state and pbuf, and passes these along to the
       ! individual get_*_optics routines from cloud_rad_props. This is not very
@@ -134,7 +134,7 @@ contains
       ! Get ice cloud optics
       call pbuf_get_field(pbuf, pbuf_get_index('ICIWP'), iciwp)
       call pbuf_get_field(pbuf, pbuf_get_index('DEI'), dei)
-      call get_ice_optics_sw( &
+      call mitchell_ice_optics_sw( &
          ncol, iciwp, dei, &
          ice_tau, ice_tau_ssa, &
          ice_tau_ssa_g, ice_tau_ssa_f &
@@ -146,7 +146,7 @@ contains
       call pbuf_get_field(pbuf, pbuf_get_index('ICLWP'), iclwp)
       call pbuf_get_field(pbuf, pbuf_get_index('LAMBDAC'), lamc)
       call pbuf_get_field(pbuf, pbuf_get_index('MU'), pgam)
-      call get_liquid_optics_sw(ncol, lamc, pgam, iclwp, &
+      call gammadist_liq_optics_sw(ncol, lamc, pgam, iclwp, &
                                 liquid_tau, liquid_tau_ssa, &
                                 liquid_tau_ssa_g, liquid_tau_ssa_f)
       call assert_range(liquid_tau(1:nswbands,1:ncol,1:pver), 0._r8, 1e20_r8, &
@@ -168,7 +168,7 @@ contains
          ! Doing snow optics; call procedure to get these from CAM state and pbuf
          call pbuf_get_field(pbuf, pbuf_get_index('ICSWP'), icswp)
          call pbuf_get_field(pbuf, pbuf_get_index('DES'), des)
-         call get_ice_optics_sw( &
+         call mitchell_ice_optics_sw( &
             ncol, icswp, des, &
             snow_tau, snow_tau_ssa, &
             snow_tau_ssa_g, snow_tau_ssa_f &
@@ -248,8 +248,8 @@ contains
       use physics_types, only: physics_state
       use physics_buffer, only: physics_buffer_desc, pbuf_get_field, &
                                 pbuf_get_index
-      use cloud_rad_props, only: get_liquid_optics_lw, &
-                                 get_ice_optics_lw
+      use cloud_rad_props, only: gammadist_liq_optics_lw, &
+                                 mitchell_ice_optics_lw
       use radconstants, only: nlwbands
 
       type(physics_state), intent(in) :: state
@@ -282,18 +282,18 @@ contains
       ! Get ice optics
       call pbuf_get_field(pbuf, pbuf_get_index('ICIWP'), iciwp)
       call pbuf_get_field(pbuf, pbuf_get_index('DEI'), dei)
-      call get_ice_optics_lw(ncol, iciwp, dei, ice_tau)
+      call mitchell_ice_optics_lw(ncol, iciwp, dei, ice_tau)
 
       ! Get liquid optics
       call pbuf_get_field(pbuf, pbuf_get_index('ICLWP'), iclwp)
       call pbuf_get_field(pbuf, pbuf_get_index('LAMBDAC'), lamc)
       call pbuf_get_field(pbuf, pbuf_get_index('MU'), pgam)
-      call get_liquid_optics_lw(ncol, lamc, pgam, iclwp, liq_tau)
+      call gammadist_liq_optics_lw(ncol, lamc, pgam, iclwp, liq_tau)
 
       ! Get snow optics?
       call pbuf_get_field(pbuf, pbuf_get_index('ICSWP'), icswp)
       call pbuf_get_field(pbuf, pbuf_get_index('DES'), des)
-      call get_ice_optics_lw(ncol, icswp, des, snow_tau)
+      call mitchell_ice_optics_lw(ncol, icswp, des, snow_tau)
 
       ! Get cloud and snow fractions. This is used to weight the contribution to
       ! the total lw absorption by the fraction of the column that contains

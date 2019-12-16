@@ -54,7 +54,6 @@ integer, parameter :: cs1 = 256
 integer, public, parameter :: N_DIAG = 10
 character(len=cs1), public :: iceopticsfile, liqopticsfile
 character(len=32),  public :: icecldoptics,liqcldoptics
-logical,            public :: oldcldoptics = .false.
 
 ! Private module data
 
@@ -274,8 +273,7 @@ subroutine rad_cnst_readnl(nlfile)
                           iceopticsfile, &
                           liqopticsfile, &
                           icecldoptics,  &
-                          liqcldoptics,  &
-                          oldcldoptics
+                          liqcldoptics
 
    !-----------------------------------------------------------------------------
 
@@ -311,7 +309,6 @@ subroutine rad_cnst_readnl(nlfile)
    call mpibcast (liqopticsfile, len(liqopticsfile),               mpichar, 0, mpicom)
    call mpibcast (liqcldoptics,  len(liqcldoptics),                mpichar, 0, mpicom)
    call mpibcast (icecldoptics,  len(icecldoptics),                mpichar, 0, mpicom)
-   call mpibcast (oldcldoptics,  1,                                mpilog , 0, mpicom)
 #endif
 
    ! Parse the namelist input strings

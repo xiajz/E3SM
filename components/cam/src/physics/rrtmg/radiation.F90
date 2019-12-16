@@ -440,7 +440,6 @@ end function radiation_nextsw_cday
        dt_avg = iradsw*dtime
     end if
 
-
     call phys_getopts(history_amwg_out   = history_amwg,    &
                       history_vdiag_out  = history_vdiag,   &
                       history_budget_out = history_budget,  &
@@ -456,17 +455,14 @@ end function radiation_nextsw_cday
 
     ! "irad_always" is number of time steps to execute radiation continuously from start of
     ! initial OR restart run
-
     nstep = get_nstep()
     if ( irad_always > 0) then
        nstep       = get_nstep()
        irad_always = irad_always + nstep
     end if
 
-
     if (docosp) call cospsimulator_intr_init
 
-    
     allocate(cosp_cnt(begchunk:endchunk))
 
     !Modification needed by pergro_mods for generating random numbers
@@ -834,7 +830,7 @@ end function radiation_nextsw_cday
     use radconstants,     only: nlwbands,idx_sw_diag
     use radsw,            only: rad_rrtmg_sw
     use radlw,            only: rad_rrtmg_lw
-    use rad_constituents, only: rad_cnst_get_gas, rad_cnst_out, oldcldoptics, &
+    use rad_constituents, only: rad_cnst_get_gas, rad_cnst_out, &
                                 liqcldoptics, icecldoptics
     use aer_rad_props,    only: aer_rad_props_sw, aer_rad_props_lw
     use interpolate_data, only: vertinterp
@@ -1156,43 +1152,36 @@ end function radiation_nextsw_cday
           call t_startf('cldoptics')
 
           if (dosw) then
-             if(oldcldoptics) then
-                call ec_ice_optics_sw(ncol, cld, rei, iciwp, ice_tau, ice_tau_w, ice_tau_w_g, ice_tau_w_f)
-                !call ec_ice_optics_sw(state, pbuf, ice_tau, ice_tau_w, ice_tau_w_g, ice_tau_w_f, oldicewp=.false.)
-                !call slingo_liq_optics_sw(state, pbuf, liq_tau, liq_tau_w, liq_tau_w_g, liq_tau_w_f, oldliqwp=.false.)
-                call slingo_liq_optics_sw(ncol, cld, rel, iclwp, liq_tau, liq_tau_w, liq_tau_w_g, liq_tau_w_f)
-             else
-                select case (icecldoptics)
-                case ('ebertcurry')
-                   call cnst_get_ind('CLDICE', ixcldice)
-                   do k=1,pver
-                      do i = 1,ncol
-                         cicewp(i,k) = 1000._r8 * state%q(i,k,ixcldice)*state%pdel(i,k) /(gravit* max(0.01_r8,cld(i,k)))
-                      end do
+             select case (icecldoptics)
+             case ('ebertcurry')
+                call cnst_get_ind('CLDICE', ixcldice)
+                do k=1,pver
+                   do i = 1,ncol
+                      cicewp(i,k) = 1000._r8 * state%q(i,k,ixcldice)*state%pdel(i,k) /(gravit* max(0.01_r8,cld(i,k)))
                    end do
-                   call ec_ice_optics_sw(ncol, cld, rei, cicewp, ice_tau, ice_tau_w, ice_tau_w_g, ice_tau_w_f)
-                   !call  ec_ice_optics_sw(state, pbuf, ice_tau, ice_tau_w, ice_tau_w_g, ice_tau_w_f, oldicewp=.true.)
-                case ('mitchell')
-                   call mitchell_ice_optics_sw(ncol, iciwp, dei, ice_tau, ice_tau_w, ice_tau_w_g, ice_tau_w_f)
-                case default
-                   call endrun('iccldoptics must be one either ebertcurry or mitchell')
-                end select
-                select case (liqcldoptics)
-                case ('slingo')
-                   call cnst_get_ind('CLDLIQ', ixcldliq)
-                   do k=1,pver
-                      do i = 1,ncol
-                         cliqwp(i,k) = state%q(i,k,ixcldliq)*state%pdel(i,k)/(gravit*max(0.01_r8,cld(i,k)))
-                      end do
+                end do
+                call ec_ice_optics_sw(ncol, cld, rei, cicewp, ice_tau, ice_tau_w, ice_tau_w_g, ice_tau_w_f)
+                !call  ec_ice_optics_sw(state, pbuf, ice_tau, ice_tau_w, ice_tau_w_g, ice_tau_w_f, oldicewp=.true.)
+             case ('mitchell')
+                call mitchell_ice_optics_sw(ncol, iciwp, dei, ice_tau, ice_tau_w, ice_tau_w_g, ice_tau_w_f)
+             case default
+                call endrun('iccldoptics must be one either ebertcurry or mitchell')
+             end select
+             select case (liqcldoptics)
+             case ('slingo')
+                call cnst_get_ind('CLDLIQ', ixcldliq)
+                do k=1,pver
+                   do i = 1,ncol
+                      cliqwp(i,k) = state%q(i,k,ixcldliq)*state%pdel(i,k)/(gravit*max(0.01_r8,cld(i,k)))
                    end do
-                   call slingo_liq_optics_sw(ncol, cld, rel, cliqwp, liq_tau, liq_tau_w, liq_tau_w_g, liq_tau_w_f)
-                   !call slingo_liq_optics_sw(state, pbuf, liq_tau, liq_tau_w, liq_tau_w_g, liq_tau_w_f, oldliqwp=.true.)
-                case ('gammadist')
-                   call gammadist_liq_optics_sw(ncol, lamc, pgam, iclwp, liq_tau, liq_tau_w, liq_tau_w_g, liq_tau_w_f)
-                case default
-                   call endrun('liqcldoptics must be either slingo or gammadist')
-                end select
-             endif
+                end do
+                call slingo_liq_optics_sw(ncol, cld, rel, cliqwp, liq_tau, liq_tau_w, liq_tau_w_g, liq_tau_w_f)
+                !call slingo_liq_optics_sw(state, pbuf, liq_tau, liq_tau_w, liq_tau_w_g, liq_tau_w_f, oldliqwp=.true.)
+             case ('gammadist')
+                call gammadist_liq_optics_sw(ncol, lamc, pgam, iclwp, liq_tau, liq_tau_w, liq_tau_w_g, liq_tau_w_f)
+             case default
+                call endrun('liqcldoptics must be either slingo or gammadist')
+             end select
              cld_tau    (:,1:ncol,:) =  liq_tau    (:,1:ncol,:) + ice_tau    (:,1:ncol,:)
              cld_tau_w  (:,1:ncol,:) =  liq_tau_w  (:,1:ncol,:) + ice_tau_w  (:,1:ncol,:)
              cld_tau_w_g(:,1:ncol,:) =  liq_tau_w_g(:,1:ncol,:) + ice_tau_w_g(:,1:ncol,:)
@@ -1235,57 +1224,47 @@ end function radiation_nextsw_cday
           endif
 
           if (dolw) then
-             if(oldcldoptics) then
-                ! make diagnostic calls to these first to output ice and liq OD's
-                !call old_liq_get_rad_props_lw(state, pbuf, liq_tau_abs_od, oldliqwp=.false.)
-                !call old_ice_get_rad_props_lw(state, pbuf, ice_tau_abs_od, oldicewp=.false.)
-                ! This affects climate (cld_abs_od)
-                call oldcloud_lw(state,pbuf,cld_lw_abs,oldwp=.false.)
+             select case (icecldoptics)
+             case ('ebertcurry')
+                call cnst_get_ind('CLDLIQ', ixcldliq)
+                call cnst_get_ind('CLDICE', ixcldice)
+                do k=1,pver
+                   do i = 1,ncol
+                      gicewp(i,k) = state%q(i,k,ixcldice)*state%pdel(i,k)/gravit * 1000._r8  ! Grid box ice water path.
+                      gliqwp(i,k) = state%q(i,k,ixcldliq)*state%pdel(i,k)/gravit * 1000._r8  ! Grid box liquid water path.
+                      cicewp(i,k) = gicewp(i,k) / max(0.01_r8,cld(i,k))  ! In-cloud ice water path.
+                      cliqwp(i,k) = gliqwp(i,k) / max(0.01_r8,cld(i,k))  ! In-cloud liquid water path.
+                      ficemr(i,k) = state%q(i,k,ixcldice) /                 &
+                             max(1.e-10_r8,(state%q(i,k,ixcldice)+state%q(i,k,ixcldliq)))
+                   end do
+                end do
+                call ec_ice_optics_lw(ncol, rei, cliqwp, cicewp, ice_lw_abs, ficemr=ficemr)
+             case ('mitchell')
                 call mitchell_ice_optics_lw(ncol, iciwp, dei, ice_lw_abs)
+             case default
+                call endrun('iccldoptics must be one either ebertcurry or mitchell')
+             end select
+             select case (liqcldoptics)
+             case ('slingo')
+                call cnst_get_ind('CLDLIQ', ixcldliq)
+                call cnst_get_ind('CLDICE', ixcldice)
+                do k=1,pver
+                   do i = 1,ncol
+                      gicewp(i,k) = state%q(i,k,ixcldice)*state%pdel(i,k)/gravit*1000._r8  ! Grid box ice water path.
+                      gliqwp(i,k) = state%q(i,k,ixcldliq)*state%pdel(i,k)/gravit*1000._r8 ! Grid box liquid water path.
+                      cicewp(i,k) = gicewp(i,k) / max(0.01_r8,cld(i,k))          ! In-cloud ice water path.
+                      cliqwp(i,k) = gliqwp(i,k) / max(0.01_r8,cld(i,k))          ! In-cloud liquid water path.
+                      ficemr(i,k) = state%q(i,k,ixcldice) /                 &
+                             max(1.e-10_r8,(state%q(i,k,ixcldice)+state%q(i,k,ixcldliq)))
+                      cwp(i,k) = (cicewp(i,k) + cliqwp(i,k))
+                   end do
+                end do
+                call slingo_liq_optics_lw(ncol, cliqwp, liq_lw_abs, cwp=cwp, ficemr=ficemr)
+             case ('gammadist')
                 call gammadist_liq_optics_lw(ncol, lamc, pgam, iclwp, liq_lw_abs)
-             else
-                select case (icecldoptics)
-                case ('ebertcurry')
-                   call cnst_get_ind('CLDLIQ', ixcldliq)
-                   call cnst_get_ind('CLDICE', ixcldice)
-                   do k=1,pver
-                      do i = 1,ncol
-                         gicewp(i,k) = state%q(i,k,ixcldice)*state%pdel(i,k)/gravit * 1000._r8  ! Grid box ice water path.
-                         gliqwp(i,k) = state%q(i,k,ixcldliq)*state%pdel(i,k)/gravit * 1000._r8  ! Grid box liquid water path.
-                         cicewp(i,k) = gicewp(i,k) / max(0.01_r8,cld(i,k))  ! In-cloud ice water path.
-                         cliqwp(i,k) = gliqwp(i,k) / max(0.01_r8,cld(i,k))  ! In-cloud liquid water path.
-                         ficemr(i,k) = state%q(i,k,ixcldice) /                 &
-                                max(1.e-10_r8,(state%q(i,k,ixcldice)+state%q(i,k,ixcldliq)))
-                      end do
-                   end do
-                   call ec_ice_optics_lw(ncol, rei, cliqwp, cicewp, ice_lw_abs, ficemr=ficemr)
-                case ('mitchell')
-                   call mitchell_ice_optics_lw(ncol, iciwp, dei, ice_lw_abs)
-                case default
-                   call endrun('iccldoptics must be one either ebertcurry or mitchell')
-                end select
-                select case (liqcldoptics)
-                case ('slingo')
-                   call cnst_get_ind('CLDLIQ', ixcldliq)
-                   call cnst_get_ind('CLDICE', ixcldice)
-                   do k=1,pver
-                      do i = 1,ncol
-                         gicewp(i,k) = state%q(i,k,ixcldice)*state%pdel(i,k)/gravit*1000._r8  ! Grid box ice water path.
-                         gliqwp(i,k) = state%q(i,k,ixcldliq)*state%pdel(i,k)/gravit*1000._r8 ! Grid box liquid water path.
-                         cicewp(i,k) = gicewp(i,k) / max(0.01_r8,cld(i,k))          ! In-cloud ice water path.
-                         cliqwp(i,k) = gliqwp(i,k) / max(0.01_r8,cld(i,k))          ! In-cloud liquid water path.
-                         ficemr(i,k) = state%q(i,k,ixcldice) /                 &
-                                max(1.e-10_r8,(state%q(i,k,ixcldice)+state%q(i,k,ixcldliq)))
-                         cwp(i,k) = (cicewp(i,k) + cliqwp(i,k))
-                      end do
-                   end do
-                   call slingo_liq_optics_lw(ncol, cliqwp, liq_lw_abs, cwp=cwp, ficemr=ficemr)
-                case ('gammadist')
-                   call gammadist_liq_optics_lw(ncol, lamc, pgam, iclwp, liq_lw_abs)
-                case default
-                   call endrun('liqcldoptics must be either slingo or gammadist')
-                end select
-             endif
+             case default
+                call endrun('liqcldoptics must be either slingo or gammadist')
+             end select
              cld_lw_abs(:,1:ncol,:) = liq_lw_abs(:,1:ncol,:) + ice_lw_abs(:,1:ncol,:)
 
              if (cldfsnow_idx > 0) then

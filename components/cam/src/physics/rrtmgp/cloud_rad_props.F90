@@ -19,11 +19,11 @@ private
 save
 
 public :: &
-   cloud_rad_props_init,          &
-   get_ice_optics_sw,             & ! return Mitchell SW ice radiative properties
-   get_ice_optics_lw,             & ! Mitchell LW ice rad props
-   get_liquid_optics_sw,          & ! return Conley SW rad props
-   get_liquid_optics_lw             ! return Conley LW rad props
+   cloud_rad_props_init,     & ! Initialize cloud optics
+   mitchell_ice_optics_sw,   & ! return Mitchell SW ice radiative properties
+   mitchell_ice_optics_lw,   & ! Mitchell LW ice rad props
+   gammadist_liq_optics_sw,  & ! return Conley SW rad props
+   gammadist_liq_optics_lw     ! return Conley LW rad props
 
 integer :: nmu, nlambda
 real(r8), allocatable :: g_mu(:)           ! mu samples on grid
@@ -231,7 +231,7 @@ end subroutine cloud_rad_props_init
 
 !==============================================================================
 
-subroutine get_liquid_optics_sw(ncol, lamc, pgam, iclwpth, tau, tau_w, tau_w_g, tau_w_f)
+subroutine gammadist_liq_optics_sw(ncol, lamc, pgam, iclwpth, tau, tau_w, tau_w_g, tau_w_f)
    integer, intent(in) :: ncol
    real(r8), intent(in) :: lamc(:,:), pgam(:,:), iclwpth(:,:)
 
@@ -256,11 +256,11 @@ subroutine get_liquid_optics_sw(ncol, lamc, pgam, iclwpth, tau, tau_w, tau_w_g, 
       enddo
    enddo
 
-end subroutine get_liquid_optics_sw
+end subroutine gammadist_liq_optics_sw
 
 !==============================================================================
 
-subroutine get_liquid_optics_lw(ncol, lamc, pgam, iclwpth, abs_od)
+subroutine gammadist_liq_optics_lw(ncol, lamc, pgam, iclwpth, abs_od)
    integer, intent(in) :: ncol
    real(r8), intent(in), dimension(:,:) :: lamc, pgam, iclwpth
    real(r8), intent(out) :: abs_od(nlwbands,pcols,pver)
@@ -277,11 +277,11 @@ subroutine get_liquid_optics_lw(ncol, lamc, pgam, iclwpth, abs_od)
       enddo
    enddo
 
-end subroutine get_liquid_optics_lw
+end subroutine gammadist_liq_optics_lw
 
 !==============================================================================
 
-subroutine get_ice_optics_sw(ncol, iciwpth, dei, tau, tau_w, tau_w_g, tau_w_f)
+subroutine mitchell_ice_optics_sw(ncol, iciwpth, dei, tau, tau_w, tau_w_g, tau_w_f)
 
   integer, intent(in) :: ncol
   real(r8), intent(in) :: iciwpth(pcols,pver)
@@ -327,11 +327,11 @@ subroutine get_ice_optics_sw(ncol, iciwpth, dei, tau, tau_w, tau_w_g, tau_w_f)
      enddo
   enddo
 
-end subroutine get_ice_optics_sw
+end subroutine mitchell_ice_optics_sw
 
 !==============================================================================
 
-subroutine get_ice_optics_lw(ncol, iciwpth, dei, abs_od)
+subroutine mitchell_ice_optics_lw(ncol, iciwpth, dei, abs_od)
 
   integer, intent(in) :: ncol
   real(r8), intent(in) :: iciwpth(pcols,pver)
@@ -364,7 +364,7 @@ subroutine get_ice_optics_lw(ncol, iciwpth, dei, abs_od)
      enddo
   enddo
 
-end subroutine get_ice_optics_lw
+end subroutine mitchell_ice_optics_lw
 
 !==============================================================================
 
