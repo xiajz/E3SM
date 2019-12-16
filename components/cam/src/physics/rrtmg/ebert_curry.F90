@@ -11,7 +11,6 @@ private
 save
 
 public :: &
-   ec_rad_props_init, &
    ec_ice_optics_sw,  &
    ec_ice_optics_lw
 
@@ -19,14 +18,8 @@ public :: &
 real, public, parameter:: scalefactor = 1._r8 !500._r8/917._r8
 
 !==============================================================================
+
 contains
-!==============================================================================
-
-subroutine ec_rad_props_init()
-
-   return
-
-end subroutine ec_rad_props_init
 
 !==============================================================================
 

@@ -52,7 +52,6 @@ subroutine cloud_rad_props_init()
    use mpishorthand
 #endif
    use constituents,   only: cnst_get_ind
-   use slingo,         only: slingo_rad_props_init
 
    character(len=256) :: liquidfile 
    character(len=256) :: icefile 
@@ -73,7 +72,6 @@ subroutine cloud_rad_props_init()
    liquidfile = liqopticsfile 
    icefile = iceopticsfile
 
-   call slingo_rad_props_init
    call oldcloud_init
 
    ! read liquid cloud optics

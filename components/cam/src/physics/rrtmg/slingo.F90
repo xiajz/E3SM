@@ -9,7 +9,6 @@ module slingo
 use shr_kind_mod,     only: r8 => shr_kind_r8
 use ppgrid,           only: pcols, pver, pverp
 use physics_types,    only: physics_state
-use physics_buffer,   only: physics_buffer_desc, pbuf_get_index, pbuf_get_field, pbuf_old_tim_idx
 use radconstants,     only: nswbands, nlwbands, idx_sw_diag, ot_length, idx_lw_diag, get_sw_spectral_boundaries
 use cam_abortutils,       only: endrun
 use cam_history,      only: outfld
@@ -19,67 +18,12 @@ private
 save
 
 public :: &
-   slingo_rad_props_init,        &
    slingo_liq_optics_lw, &
    slingo_liq_optics_sw
 
-   ! indexes into pbuf for optical parameters of MG clouds
-   integer :: iclwp_idx  = 0 
-   integer :: iciwp_idx  = 0
-   integer :: cld_idx    = 0 
-   integer :: rel_idx  = 0
-   integer :: rei_idx  = 0
-
-   ! indexes into constituents for old optics
-   integer :: &
-        ixcldliq,   &         ! cloud liquid water index
-        ixcldice              ! cloud liquid water index
-
-
 !==============================================================================
+
 contains
-!==============================================================================
-
-subroutine slingo_rad_props_init()
-
-   use cam_history, only: addfld
-   use netcdf
-   use spmd_utils,     only: masterproc
-   use ioFileMod,      only: getfil
-   use cam_logfile,    only: iulog
-   use error_messages, only: handle_ncerr
-#if ( defined SPMD )
-   use mpishorthand
-#endif
-   use constituents,   only: cnst_get_ind
-
-   integer :: err
-
-   iciwp_idx  = pbuf_get_index('ICIWP',errcode=err)
-   iclwp_idx  = pbuf_get_index('ICLWP',errcode=err)
-   cld_idx    = pbuf_get_index('CLD')
-   rel_idx    = pbuf_get_index('REL')
-   rei_idx    = pbuf_get_index('REI')
-
-   ! old optics
-   call cnst_get_ind('CLDLIQ', ixcldliq)
-   call cnst_get_ind('CLDICE', ixcldice)
-
-   !call addfld ('CLWPTH_OLD','Kg/m2   ',pver, 'I','old In Cloud Liquid Water Path',phys_decomp, sampling_seq='rad_lwsw')
-   !call addfld ('KEXT_OLD','m^2/kg',pver,'I','old extinction',phys_decomp)
-   !call addfld ('CLDOD_OLD','1',pver,'I','old liquid OD',phys_decomp)
-   !call addfld ('REL_OLD','1',pver,'I','old liquid effective radius (liquid)',phys_decomp)
-
-   !call addfld ('CLWPTH_NEW','Kg/m2   ',pver, 'I','In Cloud Liquid Water Path',phys_decomp, sampling_seq='rad_lwsw')
-   !call addfld ('KEXT_NEW','m^2/kg',pver,'I','extinction',phys_decomp)
-   !call addfld ('CLDOD_NEW','1',pver,'I','liquid OD',phys_decomp)
-
-   !call addfld('CIWPTH_NEW','Kg/m2   ',pver, 'I','In Cloud Ice Water Path',phys_decomp, sampling_seq='rad_lwsw')
-   !call addfld('CIWPTH_OLD','Kg/m2   ',pver, 'I','In Cloud Ice Water Path (old)',phys_decomp, sampling_seq='rad_lwsw')
-
-   return
-
-end subroutine slingo_rad_props_init
 
 !==============================================================================
 
