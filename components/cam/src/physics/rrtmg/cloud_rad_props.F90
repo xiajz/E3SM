@@ -7,10 +7,9 @@ use ppgrid,           only: pcols, pver
 use radconstants,     only: nswbands, nlwbands
 use cam_abortutils,   only: endrun
 use rad_constituents, only: iceopticsfile, liqopticsfile
-use oldcloud,         only: oldcloud_init
 use cam_logfile,      only: iulog
 use interpolate_data, only: interp_type, lininterp_init, lininterp, &
-     extrap_method_bndry, lininterp_finish
+                            extrap_method_bndry, lininterp_finish
 
 implicit none
 private
@@ -19,9 +18,9 @@ save
 public :: &
    cloud_rad_props_init,    &
    mitchell_ice_optics_sw,  & ! return Mitchell SW ice radiative properties
-   mitchell_ice_optics_lw,  & ! Mitchell LW ice rad props
-   gammadist_liq_optics_sw, & ! return Conley SW rad props
-   gammadist_liq_optics_lw    ! return Conley LW rad props
+   mitchell_ice_optics_lw,  & ! return Mitchell LW ice rad props
+   gammadist_liq_optics_sw, & ! return Conley SW liquid rad props
+   gammadist_liq_optics_lw    ! return Conley LW liquid rad props
 
 integer :: nmu, nlambda
 real(r8), allocatable :: g_mu(:)           ! mu samples on grid
@@ -71,8 +70,6 @@ subroutine cloud_rad_props_init()
 
    liquidfile = liqopticsfile 
    icefile = iceopticsfile
-
-   call oldcloud_init
 
    ! read liquid cloud optics
    if(masterproc) then
