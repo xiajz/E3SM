@@ -50,10 +50,7 @@ subroutine cloud_rad_props_init()
 #if ( defined SPMD )
    use mpishorthand
 #endif
-   use constituents,   only: cnst_get_ind
 
-   character(len=256) :: liquidfile 
-   character(len=256) :: icefile 
    character(len=256) :: locfn
 
    integer :: ncid, dimid, f_nlwbands, f_nswbands, ierr
@@ -68,12 +65,9 @@ subroutine cloud_rad_props_init()
 
    integer :: err
 
-   liquidfile = liqopticsfile 
-   icefile = iceopticsfile
-
    ! read liquid cloud optics
    if(masterproc) then
-   call getfil( trim(liquidfile), locfn, 0)
+   call getfil( trim(liqopticsfile), locfn, 0)
    call handle_ncerr( nf90_open(locfn, NF90_NOWRITE, ncid), 'liquid optics file missing')
    write(iulog,*)' reading liquid cloud optics from file ',locfn
 
@@ -152,7 +146,7 @@ subroutine cloud_rad_props_init()
 
    ! read ice cloud optics
    if(masterproc) then
-   call getfil( trim(icefile), locfn, 0)
+   call getfil( trim(iceopticsfile), locfn, 0)
    call handle_ncerr( nf90_open(locfn, NF90_NOWRITE, ncid), 'ice optics file missing')
    write(iulog,*)' reading ice cloud optics from file ',locfn
 
@@ -193,10 +187,8 @@ subroutine cloud_rad_props_init()
        'checking dimensions of ext_sw_ice')
    call handle_ncerr(nf90_inquire_dimension( ncid, vdimids(1), len=templen),&
        'getting first dimension sw_ext')
-   !write(iulog,*) 'expected length',n_g_d,'actual len',templen
    call handle_ncerr(nf90_inquire_dimension( ncid, vdimids(2), len=templen),&
        'getting first dimension sw_ext')
-   !write(iulog,*) 'expected length',nswbands,'actual len',templen
    call handle_ncerr( nf90_get_var(ncid, ext_sw_ice_id, ext_sw_ice),&
       'read cloud optics ext_sw_ice values')
 

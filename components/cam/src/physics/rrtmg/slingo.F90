@@ -2,8 +2,7 @@
 module slingo
 
 !------------------------------------------------------------------------------------------------
-!  Implements Slingo Optics for MG/RRTMG for liquid clouds and
-!  a copy of the old cloud routine for reference
+!  Implements Slingo Optics for MG/RRTMG for liquid clouds
 !------------------------------------------------------------------------------------------------
 
 use shr_kind_mod,     only: r8 => shr_kind_r8
@@ -140,7 +139,7 @@ subroutine slingo_liq_optics_lw(ncol, iclwp, abs_od)
    real(r8), intent(out) :: abs_od(nlwbands,pcols,pver)
 
    real(r8) :: cldtau(pcols,pver)
-   integer :: lwband, i, k, lchnk 
+   integer :: lwband, i, k
 
    ! longwave liquid absorption coeff (m**2/g)
    real(r8), parameter :: kabsl = 0.090361_r8

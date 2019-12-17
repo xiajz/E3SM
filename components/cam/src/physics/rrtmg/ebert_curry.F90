@@ -14,7 +14,6 @@ public :: &
    ec_ice_optics_sw,  &
    ec_ice_optics_lw
 
-
 real, public, parameter:: scalefactor = 1._r8 !500._r8/917._r8
 
 !==============================================================================
@@ -35,7 +34,7 @@ subroutine ec_ice_optics_sw(ncol, cldn, rei, cicewp, ice_tau, ice_tau_w, ice_tau
    real(r8), dimension(nswbands) :: wavmin
    real(r8), dimension(nswbands) :: wavmax
 
-   ! ice water coefficients (Ebert and Curry,1992, JGR, 97, 3831-3836)
+   ! ice water coefficients (Ebert and Curry, 1992, JGR, 97, 3831-3836)
    real(r8) :: abari(4) = &     ! a coefficient for extinction optical depth
       (/ 3.448e-03_r8, 3.448e-03_r8,3.448e-03_r8,3.448e-03_r8/)
    real(r8) :: bbari(4) = &     ! b coefficient for extinction optical depth
@@ -115,6 +114,7 @@ subroutine ec_ice_optics_sw(ncol, cldn, rei, cicewp, ice_tau, ice_tau_w, ice_tau
    end do ! nswbands
 
 end subroutine ec_ice_optics_sw
+
 !==============================================================================
 
 subroutine ec_ice_optics_lw(ncol, rei, cicewp, abs_od)
@@ -139,8 +139,9 @@ subroutine ec_ice_optics_lw(ncol, rei, cicewp, abs_od)
       end do
    end do
 
+   ! Copy absorption optical depth to all bands
    do lwband = 1,nlwbands
-      abs_od(lwband,1:ncol,1:pver)=cldtau(1:ncol,1:pver)
+      abs_od(lwband,1:ncol,1:pver) = cldtau(1:ncol,1:pver)
    enddo
 
 end subroutine ec_ice_optics_lw
