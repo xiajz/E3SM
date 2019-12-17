@@ -3,14 +3,11 @@ module cloud_rad_props
 !------------------------------------------------------------------------------------------------
 
 use shr_kind_mod,     only: r8 => shr_kind_r8
-use ppgrid,           only: pcols, pver, pverp
-
-use radconstants,     only: nswbands, nlwbands, idx_sw_diag, ot_length, idx_lw_diag
+use ppgrid,           only: pcols, pver
+use radconstants,     only: nswbands, nlwbands
 use rad_constituents, only: iceopticsfile, liqopticsfile
-
 use interpolate_data, only: interp_type, lininterp_init, lininterp, &
                             extrap_method_bndry, lininterp_finish
-
 use cam_logfile,      only: iulog
 use cam_abortutils,   only: endrun
 
@@ -21,9 +18,9 @@ save
 public :: &
    cloud_rad_props_init,     & ! Initialize cloud optics
    mitchell_ice_optics_sw,   & ! return Mitchell SW ice radiative properties
-   mitchell_ice_optics_lw,   & ! Mitchell LW ice rad props
-   gammadist_liq_optics_sw,  & ! return Conley SW rad props
-   gammadist_liq_optics_lw     ! return Conley LW rad props
+   mitchell_ice_optics_lw,   & ! return Mitchell LW ice rad props
+   gammadist_liq_optics_sw,  & ! return Conley SW liquid rad props
+   gammadist_liq_optics_lw     ! return Conley LW liquid rad props
 
 integer :: nmu, nlambda
 real(r8), allocatable :: g_mu(:)           ! mu samples on grid
@@ -53,10 +50,7 @@ subroutine cloud_rad_props_init()
 #if ( defined SPMD )
    use mpishorthand
 #endif
-   use constituents,   only: cnst_get_ind
 
-   character(len=256) :: liquidfile 
-   character(len=256) :: icefile 
    character(len=256) :: locfn
 
    integer :: ncid, dimid, f_nlwbands, f_nswbands, ierr
@@ -71,12 +65,10 @@ subroutine cloud_rad_props_init()
 
    integer :: err
 
-   liquidfile = liqopticsfile 
-   icefile = iceopticsfile
 
    ! read liquid cloud optics
    if(masterproc) then
-      call getfil( trim(liquidfile), locfn, 0)
+      call getfil( trim(liqopticsfile), locfn, 0)
       call handle_ncerr( nf90_open(locfn, NF90_NOWRITE, ncid), 'liquid optics file missing')
       write(iulog,*)' reading liquid cloud optics from file ',locfn
 
@@ -108,37 +100,37 @@ subroutine cloud_rad_props_init()
    if (.not.allocated(abs_lw_liq)) allocate(abs_lw_liq(nmu,nlambda,nlwbands))
 
    if(masterproc) then
-   call handle_ncerr( nf90_inq_varid(ncid, 'mu', mu_id),&
-      'cloud optics mu get')
-   call handle_ncerr( nf90_get_var(ncid, mu_id, g_mu),&
-      'read cloud optics mu values')
+      call handle_ncerr( nf90_inq_varid(ncid, 'mu', mu_id),&
+         'cloud optics mu get')
+      call handle_ncerr( nf90_get_var(ncid, mu_id, g_mu),&
+         'read cloud optics mu values')
 
-   call handle_ncerr( nf90_inq_varid(ncid, 'lambda', lambda_id),&
-      'cloud optics lambda get')
-   call handle_ncerr( nf90_get_var(ncid, lambda_id, g_lambda),&
-      'read cloud optics lambda values')
+      call handle_ncerr( nf90_inq_varid(ncid, 'lambda', lambda_id),&
+         'cloud optics lambda get')
+      call handle_ncerr( nf90_get_var(ncid, lambda_id, g_lambda),&
+         'read cloud optics lambda values')
 
-   call handle_ncerr( nf90_inq_varid(ncid, 'k_ext_sw', ext_sw_liq_id),&
-      'cloud optics ext_sw_liq get')
-   call handle_ncerr( nf90_get_var(ncid, ext_sw_liq_id, ext_sw_liq),&
-      'read cloud optics ext_sw_liq values')
+      call handle_ncerr( nf90_inq_varid(ncid, 'k_ext_sw', ext_sw_liq_id),&
+         'cloud optics ext_sw_liq get')
+      call handle_ncerr( nf90_get_var(ncid, ext_sw_liq_id, ext_sw_liq),&
+         'read cloud optics ext_sw_liq values')
 
-   call handle_ncerr( nf90_inq_varid(ncid, 'ssa_sw', ssa_sw_liq_id),&
-      'cloud optics ssa_sw_liq get')
-   call handle_ncerr( nf90_get_var(ncid, ssa_sw_liq_id, ssa_sw_liq),&
-      'read cloud optics ssa_sw_liq values')
+      call handle_ncerr( nf90_inq_varid(ncid, 'ssa_sw', ssa_sw_liq_id),&
+         'cloud optics ssa_sw_liq get')
+      call handle_ncerr( nf90_get_var(ncid, ssa_sw_liq_id, ssa_sw_liq),&
+         'read cloud optics ssa_sw_liq values')
 
-   call handle_ncerr( nf90_inq_varid(ncid, 'asm_sw', asm_sw_liq_id),&
-      'cloud optics asm_sw_liq get')
-   call handle_ncerr( nf90_get_var(ncid, asm_sw_liq_id, asm_sw_liq),&
-      'read cloud optics asm_sw_liq values')
+      call handle_ncerr( nf90_inq_varid(ncid, 'asm_sw', asm_sw_liq_id),&
+         'cloud optics asm_sw_liq get')
+      call handle_ncerr( nf90_get_var(ncid, asm_sw_liq_id, asm_sw_liq),&
+         'read cloud optics asm_sw_liq values')
 
-   call handle_ncerr( nf90_inq_varid(ncid, 'k_abs_lw', abs_lw_liq_id),&
-      'cloud optics abs_lw_liq get')
-   call handle_ncerr( nf90_get_var(ncid, abs_lw_liq_id, abs_lw_liq),&
-      'read cloud optics abs_lw_liq values')
+      call handle_ncerr( nf90_inq_varid(ncid, 'k_abs_lw', abs_lw_liq_id),&
+         'cloud optics abs_lw_liq get')
+      call handle_ncerr( nf90_get_var(ncid, abs_lw_liq_id, abs_lw_liq),&
+         'read cloud optics abs_lw_liq values')
 
-   call handle_ncerr( nf90_close(ncid), 'liquid optics file missing')
+      call handle_ncerr( nf90_close(ncid), 'liquid optics file missing')
    endif ! if masterproc
 
 #if ( defined SPMD )
@@ -155,7 +147,7 @@ subroutine cloud_rad_props_init()
 
    ! read ice cloud optics
    if(masterproc) then
-      call getfil( trim(icefile), locfn, 0)
+      call getfil( trim(iceopticsfile), locfn, 0)
       call handle_ncerr( nf90_open(locfn, NF90_NOWRITE, ncid), 'ice optics file missing')
       write(iulog,*)' reading ice cloud optics from file ',locfn
 
@@ -359,6 +351,12 @@ subroutine mitchell_ice_optics_lw(ncol, iciwpth, dei, abs_od)
                    absor(lwband:lwband), 1, dei_wgts)
            enddo
            abs_od(:,i,k) = iciwpth(i,k) * absor
+
+           ! Limit the snow/ice optical depths for consistency with RRTMG
+           ! Fixes the case where there are large masses
+           ! of snow at high altitudes
+           !where(abs_od(:,i,k) > 50.0_r8) abs_od(:,i,k) = 50.0_r8
+
            call lininterp_finish(dei_wgts)
         endif
      enddo
