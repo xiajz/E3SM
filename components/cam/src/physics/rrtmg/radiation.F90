@@ -59,7 +59,6 @@ integer :: lu_idx       = 0
 integer :: ld_idx       = 0 
 integer :: cldfsnow_idx = 0 
 integer :: cld_idx      = 0 
-integer :: concld_idx   = 0
 
 ! Default values for namelist variables
 
@@ -599,7 +598,7 @@ end function radiation_nextsw_cday
 
           call addfld('SOLIN'//diag(icall),  horiz_only,     'A',   'W/m2', 'Solar insolation', sampling_seq='rad_lwsw')
           call addfld('SOLL'//diag(icall),  horiz_only,     'A',    'W/m2', 'Solar downward near infrared direct  to surface',&
-	   sampling_seq='rad_lwsw')
+                      sampling_seq='rad_lwsw')
           call addfld('SOLS'//diag(icall),  horiz_only,     'A',    'W/m2', 'Solar downward visible direct  to surface', &
                                                                                  sampling_seq='rad_lwsw')
           call addfld('SOLLD'//diag(icall),  horiz_only,     'A',   'W/m2', 'Solar downward near infrared diffuse to surface', &
@@ -638,11 +637,11 @@ end function radiation_nextsw_cday
           call addfld('FUSC'//diag(icall),  (/ 'ilev' /), 'I',    'W/m2', 'Shortwave clear-sky upward flux')
           call addfld('FDSC'//diag(icall),  (/ 'ilev' /), 'I',    'W/m2', 'Shortwave clear-sky downward flux')
           call addfld('FSNIRTOA'//diag(icall),  horiz_only,     'A','W/m2',&
-	   'Net near-infrared flux (Nimbus-7 WFOV) at top of atmosphere', sampling_seq='rad_lwsw')
+                      'Net near-infrared flux (Nimbus-7 WFOV) at top of atmosphere', sampling_seq='rad_lwsw')
           call addfld('FSNRTOAC'//diag(icall),  horiz_only,     'A','W/m2', &
                       'Clearsky net near-infrared flux (Nimbus-7 WFOV) at top of atmosphere', sampling_seq='rad_lwsw')
           call addfld('FSNRTOAS'//diag(icall),  horiz_only,     'A','W/m2', &
-	  'Net near-infrared flux (>= 0.7 microns) at top of atmosphere', sampling_seq='rad_lwsw')
+                      'Net near-infrared flux (>= 0.7 microns) at top of atmosphere', sampling_seq='rad_lwsw')
           call addfld ('SWCF'//diag(icall),  horiz_only,     'A',   'W/m2', 'Shortwave cloud forcing', sampling_seq='rad_lwsw')
 
           if (history_amwg) then
@@ -773,7 +772,6 @@ end function radiation_nextsw_cday
 
     cldfsnow_idx = pbuf_get_index('CLDFSNOW',errcode=err)
     cld_idx      = pbuf_get_index('CLD')
-    concld_idx   = pbuf_get_index('CONCLD')
 
     if (cldfsnow_idx > 0) then
        call addfld ('CLDFSNOW',(/ 'lev' /),'I','1','CLDFSNOW',flag_xyfill=.true.)
@@ -882,14 +880,6 @@ end function radiation_nextsw_cday
                                                   !    1st region,pmxrgn(i,1)->pmxrgn(i,2) for
                                                   !    2nd region, etc
        real(r8) emis(pcols,pver)                  ! Cloud longwave emissivity
-       real(r8) :: cldtau(pcols,pver)             ! Cloud longwave optical depth
-       real(r8) :: cicewp(pcols,pver)             ! in-cloud cloud ice water path
-       real(r8) :: cliqwp(pcols,pver)             ! in-cloud cloud liquid water path
-       real(r8), pointer :: rel(:,:), rei(:,:)
-       real(r8) :: cltot(pcols)                      ! Diagnostic total cloud cover
-       real(r8) :: cllow(pcols)                      !       "     low  cloud cover
-       real(r8) :: clmed(pcols)                      !       "     mid  cloud cover
-       real(r8) :: clhgh(pcols)                      !       "     hgh  cloud cover
        real(r8) :: ftem(pcols,pver)              ! Temporary workspace for outfld variables
 
        ! combined cloud radiative parameters are "in cloud" not "in cell"
@@ -939,22 +929,20 @@ end function radiation_nextsw_cday
        real(r8), pointer, dimension(:,:) :: cld      ! cloud fraction
        real(r8), pointer, dimension(:,:) :: cldfsnow ! cloud fraction of just "snow clouds- whatever they are"
        real(r8) :: cldfprime(pcols,pver)             ! combined cloud fraction (snow plus regular)
-       real(r8), pointer, dimension(:,:) :: concld   ! convective cloud fraction
        real(r8), pointer, dimension(:,:) :: qrs      ! shortwave radiative heating rate 
        real(r8), pointer, dimension(:,:) :: qrl      ! longwave  radiative heating rate 
        real(r8) :: qrsc(pcols,pver)                  ! clearsky shortwave radiative heating rate 
        real(r8) :: qrlc(pcols,pver)                  ! clearsky longwave  radiative heating rate 
 
-       integer lchnk, ncol, lw
+       integer :: lchnk, ncol
        real(r8) :: calday                        ! current calendar day
        real(r8) :: clat(pcols)                   ! current latitudes(radians)
        real(r8) :: clon(pcols)                   ! current longitudes(radians)
-       real(r8) coszrs(pcols)                     ! Cosine solar zenith angle
-       logical  :: conserve_energy = .true.       ! flag to carry (QRS,QRL)*dp across time steps
+       real(r8) :: coszrs(pcols)                 ! Cosine solar zenith angle
+       logical  :: conserve_energy = .true.      ! flag to carry (QRS,QRL)*dp across time steps
 
        ! Local variables from radctl
        integer :: i, k, iseed, ilchnk                  ! index
-       integer :: istat
        integer :: clm_seed (pcols,kiss_seed_num)
        real(r8) solin(pcols)         ! Solar incident flux
        real(r8) fsntoa(pcols)        ! Net solar flux at TOA
@@ -1010,7 +998,7 @@ end function radiation_nextsw_cday
        real(r8) :: aer_lw_abs (pcols,pver,nbndlw)   ! aerosol absorption optics depth (LW)
 
        ! Gathered indicies of day and night columns 
-       !  chunk_column_index = IdxDay(daylight_column_index)
+       ! chunk_column_index = IdxDay(daylight_column_index)
        integer :: Nday                      ! Number of daylight columns
        integer :: Nnite                     ! Number of night columns
        integer, dimension(pcols) :: IdxDay  ! Indicies of daylight coumns
@@ -1019,18 +1007,17 @@ end function radiation_nextsw_cday
        integer :: icall                     ! index through climate/diagnostic radiation calls
        logical :: active_calls(0:N_DIAG)
 
-       type(rrtmg_state_t), pointer :: r_state ! contains the atm concentratiosn in layers needed for RRTMG
+       type(rrtmg_state_t), pointer :: r_state ! contains the atm concentrations in layers needed for RRTMG
 
-   ! AeroCOM IND3 output +++mhwang
+       ! AeroCOM IND3 output +++mhwang
        real(r8) ::  aod400(pcols)        ! AOD at 400 nm 
        real(r8) ::  aod700(pcols)        ! AOD at 700 nm
        real(r8) ::  angstrm(pcols)       ! Angstrom coefficient
        real(r8) ::  aerindex(pcols)      ! Aerosol index
        integer aod400_idx, aod700_idx, cld_tau_idx
 
-       integer :: ixcldliq, ixcldice
-
-       real(r8), pointer, dimension(:,:) :: iclwp, iciwp, icswp, dei, des, lamc, pgam
+       ! Pointers for pbuf access to cloud properties needed for cloud optics
+       real(r8), pointer, dimension(:,:) :: iclwp, iciwp, icswp, dei, des, lamc, pgam, rel, rei
       
        character(*), parameter :: name = 'radiation_tend'
    !----------------------------------------------------------------------
@@ -1056,7 +1043,6 @@ end function radiation_nextsw_cday
           call pbuf_get_field(pbuf, cldfsnow_idx, cldfsnow, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
        endif
        call pbuf_get_field(pbuf, cld_idx,      cld,      start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
-       call pbuf_get_field(pbuf, concld_idx,   concld,   start=(/1,1,itim_old/), kount=(/pcols,pver,1/)  )
 
        call pbuf_get_field(pbuf, qrs_idx,      qrs)
        call pbuf_get_field(pbuf, qrl_idx,      qrl)
@@ -1085,15 +1071,6 @@ end function radiation_nextsw_cday
        call pbuf_get_field(pbuf, pbuf_get_index('REL'), rel)
        call pbuf_get_field(pbuf, pbuf_get_index('REI'), rei)
 
-       ! Hack for old optics; should be unnecessary now
-       call cnst_get_ind('CLDICE', ixcldice)
-       call cnst_get_ind('CLDLIQ', ixcldliq)
-       do k=1,pver
-          do i = 1,ncol
-             cicewp(i,k) = state%q(i,k,ixcldice)*state%pdel(i,k) / (gravit*max(0.01_r8,cld(i,k)))
-             cliqwp(i,k) = state%q(i,k,ixcldliq)*state%pdel(i,k) / (gravit*max(0.01_r8,cld(i,k)))
-          end do
-       end do
 
        if (do_aerocom_ind3) then
          cld_tau_idx = pbuf_get_index('cld_tau')
@@ -1159,7 +1136,7 @@ end function radiation_nextsw_cday
           if (dosw) then
              select case (icecldoptics)
              case ('ebertcurry')
-                call ec_ice_optics_sw(ncol, cld, rei, cicewp, ice_tau, ice_tau_w, ice_tau_w_g, ice_tau_w_f)
+                call ec_ice_optics_sw(ncol, cld, rei, iciwp, ice_tau, ice_tau_w, ice_tau_w_g, ice_tau_w_f)
              case ('mitchell')
                 call mitchell_ice_optics_sw(ncol, iciwp, dei, ice_tau, ice_tau_w, ice_tau_w_g, ice_tau_w_f)
              case default
@@ -1167,7 +1144,7 @@ end function radiation_nextsw_cday
              end select
              select case (liqcldoptics)
              case ('slingo')
-                call slingo_liq_optics_sw(ncol, cld, rel, cliqwp, liq_tau, liq_tau_w, liq_tau_w_g, liq_tau_w_f)
+                call slingo_liq_optics_sw(ncol, cld, rel, iclwp, liq_tau, liq_tau_w, liq_tau_w_g, liq_tau_w_f)
              case ('gammadist')
                 call gammadist_liq_optics_sw(ncol, lamc, pgam, iclwp, liq_tau, liq_tau_w, liq_tau_w_g, liq_tau_w_f)
              case default
@@ -1217,7 +1194,7 @@ end function radiation_nextsw_cday
           if (dolw) then
              select case (icecldoptics)
              case ('ebertcurry')
-                call ec_ice_optics_lw(ncol, rei, cicewp, ice_lw_abs)
+                call ec_ice_optics_lw(ncol, rei, iciwp, ice_lw_abs)
              case ('mitchell')
                 call mitchell_ice_optics_lw(ncol, iciwp, dei, ice_lw_abs)
              case default
@@ -1225,7 +1202,7 @@ end function radiation_nextsw_cday
              end select
              select case (liqcldoptics)
              case ('slingo')
-                call slingo_liq_optics_lw(ncol, cliqwp, liq_lw_abs)
+                call slingo_liq_optics_lw(ncol, iclwp, liq_lw_abs)
              case ('gammadist')
                 call gammadist_liq_optics_lw(ncol, lamc, pgam, iclwp, liq_lw_abs)
              case default
@@ -1471,8 +1448,8 @@ end function radiation_nextsw_cday
                      fcnl(:,:) = 0._r8
                      fldsc(:) = 0._r8
                   end if !lwrad_off
-		  
-		  do i=1,ncol
+  
+                  do i=1,ncol
                      lwcf(i)=flutc(i) - flut(i)
                   end do
 
@@ -1585,7 +1562,7 @@ end function radiation_nextsw_cday
               !call should be compatible with camrt radiation.F90 interface too, should be with (in),optional
               ! N.B.: For snow optical properties, the GRID-BOX MEAN shortwave and longwave optical depths are passed.
               call t_startf ('cosp_run')
-	      call cospsimulator_intr_run(state,  pbuf, cam_in, emis, coszrs, &
+              call cospsimulator_intr_run(state,  pbuf, cam_in, emis, coszrs, &
                    cld_swtau_in=cld_tau(rrtmg_sw_cloudsim_band,:,:),&
                    snow_tau_in=gb_snow_tau,snow_emis_in=gb_snow_lw)
               cosp_cnt(lchnk) = 0  !! reset counter
