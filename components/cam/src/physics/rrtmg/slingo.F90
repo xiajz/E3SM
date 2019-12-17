@@ -7,11 +7,8 @@ module slingo
 !------------------------------------------------------------------------------------------------
 
 use shr_kind_mod,     only: r8 => shr_kind_r8
-use ppgrid,           only: pcols, pver, pverp
-use physics_types,    only: physics_state
-use radconstants,     only: nswbands, nlwbands, idx_sw_diag, ot_length, idx_lw_diag, get_sw_spectral_boundaries
-use cam_abortutils,       only: endrun
-use cam_history,      only: outfld
+use ppgrid,           only: pcols, pver
+use radconstants,     only: nswbands, nlwbands, get_sw_spectral_boundaries
 
 implicit none
 private
@@ -28,8 +25,6 @@ contains
 !==============================================================================
 
 subroutine slingo_liq_optics_sw(ncol, cldn, rel, cliqwp, liq_tau, liq_tau_w, liq_tau_w_g, liq_tau_w_f)
-
-   use physconst, only: gravit
 
    integer, intent(in) :: ncol
    real(r8), intent(in), dimension(:,:) :: cldn, rel, cliqwp
@@ -115,7 +110,7 @@ subroutine slingo_liq_optics_sw(ncol, cldn, rel, cliqwp, liq_tau, liq_tau_w, liq
             ! in range of 4.2 > rel > 16 micron (Slingo 89)
             if (cldn(i,k) >= cldmin .and. cldn(i,k) >= cldeps) then
                tmp1l = abarli + bbarli/min(max(4.2_r8,rel(i,k)),16._r8)
-               liq_tau(ns,i,k) = 1000._r8*cliqwp(i,k)*tmp1l
+               liq_tau(ns,i,k) = 1000._r8 * cliqwp(i,k) * tmp1l
             else
                liq_tau(ns,i,k) = 0.0_r8
             endif
@@ -136,44 +131,29 @@ subroutine slingo_liq_optics_sw(ncol, cldn, rel, cliqwp, liq_tau, liq_tau_w, liq
 
 end subroutine slingo_liq_optics_sw
 
-subroutine slingo_liq_optics_lw(ncol, iclwp, abs_od, cwp, ficemr)
+!==============================================================================
+
+subroutine slingo_liq_optics_lw(ncol, iclwp, abs_od)
 
    integer, intent(in) :: ncol
    real(r8), intent(in), dimension(:,:) :: iclwp
    real(r8), intent(out) :: abs_od(nlwbands,pcols,pver)
-   real(r8), intent(in), optional, dimension(:,:) :: cwp, ficemr
 
    real(r8) :: cldtau(pcols,pver)
    integer :: lwband, i, k, lchnk 
-
-   real(r8) :: kabs, kabsi
 
    ! longwave liquid absorption coeff (m**2/g)
    real(r8), parameter :: kabsl = 0.090361_r8
 
    ! Note that optical properties for ice valid only
    ! in range of 13 > rei > 130 micron (Ebert and Curry 92)
-   if (present(cwp) .and. present(ficemr)) then
-      ! Note from Andrew Conley:
-      !  Optics for RK no longer supported, This is constructed to get
-      !  close to bit for bit.  Otherwise we could simply use liquid water path
-      !
-      ! NOTE: this is a hack to maintain BFB for now. We should abandon this and
-      ! just use the liquid water path.
-      do k=1,pver
-         do i=1,ncol
-            kabs = kabsl*(1._r8-ficemr(i,k))
-            cldtau(i,k) = kabs * (cwp(i,k))
-         end do
+   do k=1,pver
+      do i=1,ncol
+         cldtau(i,k) = kabsl * 1000._r8 * iclwp(i,k)
       end do
-   else
-      do k=1,pver
-         do i=1,ncol
-            cldtau(i,k) = kabsl * (iclwp(i,k))
-         end do
-      end do
-   end if
+   end do
 
+   ! Copy absorption optical depth to each band
    do lwband = 1,nlwbands
       abs_od(lwband,1:ncol,1:pver)=cldtau(1:ncol,1:pver)
    enddo

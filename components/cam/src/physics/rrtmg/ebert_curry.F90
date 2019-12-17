@@ -95,7 +95,7 @@ subroutine ec_ice_optics_sw(ncol, cldn, rei, cicewp, ice_tau, ice_tau_w, ice_tau
             ! in range of 13 > rei > 130 micron (Ebert and Curry 92)
             if (cldn(i,k) >= cldmin .and. cldn(i,k) >= cldeps) then
                tmp1i = abarii + bbarii/max(13._r8,min(scalefactor*rei(i,k),130._r8))
-               ice_tau(ns,i,k) = cicewp(i,k)*tmp1i
+               ice_tau(ns,i,k) = 1000._r8 * cicewp(i,k) * tmp1i
             else
                ice_tau(ns,i,k) = 0.0_r8
             endif
@@ -117,48 +117,27 @@ subroutine ec_ice_optics_sw(ncol, cldn, rei, cicewp, ice_tau, ice_tau_w, ice_tau
 end subroutine ec_ice_optics_sw
 !==============================================================================
 
-subroutine ec_ice_optics_lw(ncol, rei, cliqwp, cicewp, abs_od, ficemr)
+subroutine ec_ice_optics_lw(ncol, rei, cicewp, abs_od)
 
    integer, intent(in) :: ncol
-   real(r8), intent(in), dimension(:,:) :: rei, cliqwp, cicewp
+   real(r8), intent(in), dimension(:,:) :: rei, cicewp
    real(r8), intent(out) :: abs_od(nlwbands,pcols,pver)
-   real(r8), intent(in), dimension(:,:), optional :: ficemr
 
-   real(r8) :: cwp(pcols,pver)
    real(r8) :: cldtau(pcols,pver)
 
    integer :: lwband, i, k
 
-   ! absorption coefficients
-   real(r8) :: kabs, kabsi
+   ! absorption coefficient
+   real(r8) :: kabsi
 
-   do k=1,pver
+   ! note that optical properties for ice valid only
+   ! in range of 13 > rei > 130 micron (Ebert and Curry 92)
+   do k = 1,pver
       do i = 1,ncol
-         cwp(i,k) = cliqwp(i,k) + cicewp(i,k)
+         kabsi = 0.005_r8 + 1._r8/min(max(13._r8,scalefactor*rei(i,k)),130._r8)
+         cldtau(i,k) = kabsi * 1000._r8 * cicewp(i,k)
       end do
    end do
-
-   if (present(ficemr)) then
-      do k=1,pver
-          do i=1,ncol
-             ! Note from Andrew Conley:
-             !  Optics for RK no longer supported, This is constructed to get
-             !  close to bit for bit.  Otherwise we could simply use ice water path
-             !note that optical properties for ice valid only
-             !in range of 13 > rei > 130 micron (Ebert and Curry 92)
-             kabsi = 0.005_r8 + 1._r8/min(max(13._r8,scalefactor*rei(i,k)),130._r8)
-             kabs =  kabsi*ficemr(i,k)
-             cldtau(i,k) = kabs*cwp(i,k)
-          end do
-      end do
-   else
-      do k = 1,pver
-         do i = 1,ncol
-            kabsi = 0.005_r8 + 1._r8/min(max(13._r8,scalefactor*rei(i,k)),130._r8)
-            cldtau(i,k) = kabsi * cicewp(i,k)
-         end do
-      end do
-   end if
 
    do lwband = 1,nlwbands
       abs_od(lwband,1:ncol,1:pver)=cldtau(1:ncol,1:pver)
