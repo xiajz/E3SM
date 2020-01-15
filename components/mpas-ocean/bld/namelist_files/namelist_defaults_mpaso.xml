@@ -183,7 +183,7 @@
 
 <!-- mesoscale_eddy_parameterizations -->
 <config_mesoscale_eddy_isopycnal_slope_limit>0.01</config_mesoscale_eddy_isopycnal_slope_limit>
-<config_eddying_resolution_taper>'constant'</config_eddying_resolution_taper>
+<config_eddying_resolution_taper>'none'</config_eddying_resolution_taper>
 <config_eddying_resolution_ramp_min>20e3</config_eddying_resolution_ramp_min>
 <config_eddying_resolution_ramp_max>30e3</config_eddying_resolution_ramp_max>
 
